@@ -139,7 +139,7 @@ const Navbar = () => {
             <motion.nav
                 initial="hidden"
                 animate="visible"
-                className="fixed top-0 left-0 right-0 z-50"
+                className="fixed top-0 left-0 right-0 z-50" style={{zIndex:"1000"}}
             >
                 {/* Desktop Navigation */}
                 <div className="hidden lg:block">

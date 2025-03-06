@@ -47,12 +47,14 @@ const FilterButton = ({
     count = 0,
     isActive,
     onClick,
-    isLoading
+    isLoading,
+    dataFilter
 }) => (
     <motion.button
         onClick={onClick}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        data-filter={dataFilter}
         className={`px-4 py-2 rounded-sm flex items-center justify-between gap-2 transition-all duration-200 
             ${isActive
                 ? 'bg-black border border-white/50 text-white'
@@ -81,11 +83,14 @@ const FilterDropdown = ({
     options = [],
     selectedValues = [],
     onChange,
-    isOpen
+    isOpen,
+    filterType
 }) => (
     <AnimatePresence>
         {isOpen && (
             <motion.div
+                id={`dropdown-${filterType}`}
+                data-dropdown={filterType}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -94,7 +99,7 @@ const FilterDropdown = ({
                     bg-black border border-gray-700"
             >
                 <motion.div
-                    className="max-h-80 overflow-y-auto  py-2"
+                    className="max-h-80 overflow-y-auto py-2"
                     initial="hidden"
                     animate="visible"
                     variants={{
@@ -174,6 +179,7 @@ const ProjectCard = ({ project }) => (
         </Link>
     </motion.div>
 );
+
 const ProjectShowcase = () => {
     const initialFilters = {
         page: 1,
@@ -187,7 +193,7 @@ const ProjectShowcase = () => {
 
     const [filters, setFilters] = useState(initialFilters);
     const [activeFilter, setActiveFilter] = useState(null);
-    const filterRef = useRef(null);
+    const filtersContainerRef = useRef(null);
 
     // Data fetching hooks with proper error handling
     const { data: projectsResponse, isLoading: isLoadingProjects } = useProjects(filters);
@@ -196,13 +202,43 @@ const ProjectShowcase = () => {
     const { data: productCategoriesData } = useProductCategoriesNew();
     const { data: productGroupsData } = useProductGroups();
 
-
     // Extract data with proper fallbacks
     const projects = projectsResponse?.data.data || [];
     const projectCategories = projectCategoriesData?.data || [];
     const productTypes = productTypesData || [];
     const productCategories = productCategoriesData || [];
     const productGroups = productGroupsData || [];
+
+    // Handle click outside to close dropdown - FIXED IMPLEMENTATION
+    useEffect(() => {
+        function handleClickOutside(event) {
+            // Only do something if a filter is active
+            if (activeFilter) {
+                // Find the active button and dropdown elements
+                const activeButtonElement = document.querySelector(`[data-filter="${activeFilter}"]`);
+                const activeDropdownElement = document.querySelector(`[data-dropdown="${activeFilter}"]`);
+
+                // Check if the clicked element is outside of both the button and dropdown
+                const clickedOutside = activeButtonElement && 
+                                      !activeButtonElement.contains(event.target) && 
+                                      activeDropdownElement && 
+                                      !activeDropdownElement.contains(event.target);
+                
+                // Close the dropdown if clicked outside
+                if (clickedOutside) {
+                    setActiveFilter(null);
+                }
+            }
+        }
+
+        // Add event listener
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        // Clean up
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeFilter]);
 
     useEffect(() => {
         console.log('Projects Response:', projectsResponse);
@@ -211,7 +247,6 @@ const ProjectShowcase = () => {
         console.log('Product Categories:', productCategories);
         console.log('Product Groups:', productGroups);
     }, [projectsResponse, projectCategories, productTypes, productCategories, productGroups]);
-
 
     useEffect(() => {
         console.log('Current Filters:', filters);
@@ -297,8 +332,8 @@ const ProjectShowcase = () => {
                 </span>
             </div>
             {/* Filters Section */}
-            <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
-                <div className="py-4 flex flex-wrap gap-3" ref={filterRef}>
+            <div className="sticky top-0 z-20 bg-black/95 backdrop-blur-sm border-b border-white/10">
+                <div className="py-4 flex flex-wrap gap-3" ref={filtersContainerRef}>
                     {filterConfig.map(({ type, label, options, loading }) => (
                         <div key={type} className="relative">
                             <FilterButton
@@ -307,6 +342,7 @@ const ProjectShowcase = () => {
                                 isActive={activeFilter === type}
                                 onClick={() => setActiveFilter(activeFilter === type ? null : type)}
                                 isLoading={loading}
+                                dataFilter={type}
                             />
                             <FilterDropdown
                                 options={options?.map(item => ({
@@ -316,6 +352,7 @@ const ProjectShowcase = () => {
                                 selectedValues={filters[type]}
                                 onChange={(id) => handleFilterChange(type, id)}
                                 isOpen={activeFilter === type}
+                                filterType={type}
                             />
                         </div>
                     ))}
