@@ -82,7 +82,7 @@ const ResearchDevelopmentPage = () => {
                                     </div>
 
                                     {/* Media Section */}
-                                    <div className="w-full lg:w-4/6 h-[83vh] relative border border-white/50 rounded-lg">
+                                    <div className="w-full lg:w-4/6 md:h-[83vh] relative border border-white/50 rounded-lg">
                                         {isVideo(item.media_url) ? (
                                             <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
                                                 <video 
