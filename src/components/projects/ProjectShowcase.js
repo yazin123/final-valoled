@@ -305,7 +305,7 @@ const ProjectShowcase = () => {
         },
         {
             type: 'product_group',
-            label: 'Product Groups',
+            label: 'Product Family',
             options: productGroups,
             loading: !productGroupsData
         }

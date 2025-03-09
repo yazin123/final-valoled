@@ -82,26 +82,25 @@ const ResearchDevelopmentPage = () => {
                                     </div>
 
                                     {/* Media Section */}
-                                    <div className="w-full lg:w-4/6 md:h-[83vh] relative border border-white/50 rounded-lg">
+                                    <div className="w-full lg:w-4/6 md:h-[63vh] relative border border-white/30 rounded-3xl">
                                         {isVideo(item.media_url) ? (
-                                            <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
+                                            <div className="w-full h-full bg-gray-900 overflow-hidden rounded-3xl">
                                                 <video 
                                                     src={item.media_url} 
                                                     className="w-full h-full object-cover" 
                                                     controls
                                                     playsInline
-                                                    autoPlay
                                                     muted
                                                     loop
                                                 />
                                             </div>
                                         ) : item.media_url ? (
-                                            <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
+                                            <div className="w-full h-full bg-gray-900 rounded-3xl overflow-hidden">
                                                 <Image
                                                     src={item.media_url}
                                                     alt={item.title || "Research and development"}
                                                     fill
-                                                    className="object-cover"
+                                                    className="object-cover rounded-3xl"
                                                     sizes="(max-width: 768px) 100vw, 60vw"
                                                 />
                                             </div>
