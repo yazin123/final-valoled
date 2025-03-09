@@ -41,6 +41,11 @@ const ResearchDevelopmentPage = () => {
         content: pageContent?.subtitle
     };
 
+    const isVideo = (url) => {
+        if (!url) return false;
+        return url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov');
+    };
+
     return (
         <>
             {/* Hero Section */}
@@ -50,44 +55,70 @@ const ResearchDevelopmentPage = () => {
             {researchItems && researchItems.length > 0 && (
                 <div className="w-full bg-black text-white py-16">
                     <div className="max-w-7xl mx-auto px-4">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="space-y-24">
                             {researchItems.map((item) => (
-                                <Link
-                                    href={`/research-development/${item._id}`}
+                                <div 
                                     key={item._id}
-                                    className="bg-gray-900 rounded-lg overflow-hidden transform transition-transform hover:scale-105"
+                                    className="flex flex-col lg:flex-row gap-8 items-start "
                                 >
-                                    <div className="group cursor-pointer">
-                                        {item.media_url && (
-                                            <div className="relative w-full h-48">
-                                                <Image
-                                                    src={item.media_url}
-                                                    alt={item.title}
-                                                    fill
-                                                    className="object-cover"
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    {/* Content Section */}
+                                    <div className="w-full lg:w-2/6 md:pr-32">
+                                        <h2 className="text-2xl md:text-2xl font-semibold uppercase mb-4">
+                                            {item.title}
+                                        </h2>
+                                        {item.subtitle && (
+                                            <p className="text-md font-semibold text-gray-100 mb-4">{item.subtitle}</p>
+                                        )}
+                                        <div 
+                                            className="text-gray-300 text-xs text-  prose prose-invert max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: item.content }}
+                                        />
+                                        {/* <Link
+                                            href={`/research-development/${item._id}`}
+                                            className="inline-block mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                        >
+                                            Learn More
+                                        </Link> */}
+                                    </div>
+
+                                    {/* Media Section */}
+                                    <div className="w-full lg:w-4/6 h-96 relative border border-white/50 rounded-lg">
+                                        {isVideo(item.media_url) ? (
+                                            <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
+                                                <video 
+                                                    src={item.media_url} 
+                                                    className="w-full h-full object-cover" 
+                                                    controls
+                                                    playsInline
+                                                    autoPlay
+                                                    muted
+                                                    loop
                                                 />
                                             </div>
+                                        ) : item.media_url ? (
+                                            <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
+                                                <Image
+                                                    src={item.media_url}
+                                                    alt={item.title || "Research and development"}
+                                                    fill
+                                                    className="object-cover"
+                                                    sizes="(max-width: 768px) 100vw, 60vw"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
+                                                <span className="text-gray-400">No media available</span>
+                                            </div>
                                         )}
-                                        <div className="p-6">
-                                            <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-400">
-                                                {item.title}
-                                            </h3>
-                                            {item.subtitle && (
-                                                <p className="text-gray-400 mb-3">{item.subtitle}</p>
-                                            )}
-                                            <div
-                                                className="text-gray-300 line-clamp-3"
-                                                dangerouslySetInnerHTML={{ __html: item.content }}
-                                            />
-                                        </div>
                                     </div>
-                                </Link>
+                                </div>
                             ))}
                         </div>
                     </div>
                 </div>
             )}
+
+
         </>
     );
 };
