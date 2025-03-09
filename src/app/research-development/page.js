@@ -53,8 +53,8 @@ const ResearchDevelopmentPage = () => {
 
             {/* Research Items Section */}
             {researchItems && researchItems.length > 0 && (
-                <div className="w-full bg-black text-white py-16">
-                    <div className="max-w-7xl mx-auto px-4">
+                <div className="min-h-screen w-full md:px-6 mx-auto px-4 text-white">
+                    <div className=" ">
                         <div className="space-y-24">
                             {researchItems.map((item) => (
                                 <div 
@@ -62,15 +62,15 @@ const ResearchDevelopmentPage = () => {
                                     className="flex flex-col lg:flex-row gap-8 items-start "
                                 >
                                     {/* Content Section */}
-                                    <div className="w-full lg:w-2/6 md:pr-32">
-                                        <h2 className="text-2xl md:text-2xl font-semibold uppercase mb-4">
+                                    <div className="w-full lg:w-2/6 md:pr-32 pt-5">
+                                        <h2 className="text-3xl  font-semibold uppercase mb-4">
                                             {item.title}
                                         </h2>
                                         {item.subtitle && (
-                                            <p className="text-md font-semibold text-gray-100 mb-4">{item.subtitle}</p>
+                                            <p className="text-lg font-semibold text-gray-100 mb-4">{item.subtitle}</p>
                                         )}
                                         <div 
-                                            className="text-gray-300 text-xs text-  prose prose-invert max-w-none"
+                                            className="text-gray-300 text-sm  prose prose-invert max-w-none"
                                             dangerouslySetInnerHTML={{ __html: item.content }}
                                         />
                                         {/* <Link
@@ -82,7 +82,7 @@ const ResearchDevelopmentPage = () => {
                                     </div>
 
                                     {/* Media Section */}
-                                    <div className="w-full lg:w-4/6 h-96 relative border border-white/50 rounded-lg">
+                                    <div className="w-full lg:w-4/6 h-[83vh] relative border border-white/50 rounded-lg">
                                         {isVideo(item.media_url) ? (
                                             <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden">
                                                 <video 
