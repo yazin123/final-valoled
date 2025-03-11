@@ -10,8 +10,6 @@ const Footer = () => {
     const [isContactOpen, setIsContactOpen] = useState(false);
     const { data: companySettings, isLoading } = useCompanySettings();
 
-    console.log("Full company settings:", companySettings);
-
     // Map social media icons to their respective Lucide components
     const getSocialIcon = (type) => {
         switch (type.toLowerCase()) {
@@ -32,26 +30,16 @@ const Footer = () => {
 
     // Generate social links from API data - Direct access, no nested .data
     const socialLinks = !isLoading && companySettings?.socialMedia
-        ? Object.entries(companySettings.socialMedia).map(([key, value]) => ({
-            icon: getSocialIcon(key),
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            href: value,
-          })).filter(link => link.icon !== null)
+        ? Object.entries(companySettings.socialMedia)
+            .filter(([_, value]) => value && value.trim() !== '') // Filter out empty values
+            .map(([key, value]) => ({
+                icon: getSocialIcon(key),
+                label: key.charAt(0).toUpperCase() + key.slice(1),
+                href: value,
+            }))
+            .filter(link => link.icon !== null)
         : [];
     
-    console.log("social links are:", socialLinks);
-
-    // Fallback social links in case API fails or is loading
-    const fallbackSocialLinks = [
-        { icon: <Instagram size={20} />, label: 'Instagram', href: '#' },
-        { icon: <Facebook size={20} />, label: 'Facebook', href: '#' },
-        { icon: <Twitter size={20} />, label: 'Twitter', href: '#' },
-        { icon: <Linkedin size={20} />, label: 'Linkedin', href: '#' },
-        { icon: <Youtube size={20} />, label: 'Youtube', href: '#' },
-    ];
-
-    const displaySocialLinks = socialLinks.length > 0 ? socialLinks : fallbackSocialLinks;
-
     // Get contact email from API - Direct access, no nested .data
     const contactEmail = !isLoading && companySettings?.contactEmail 
         ? companySettings.contactEmail 
@@ -86,29 +74,36 @@ const Footer = () => {
         },
     };
 
+    // Determine if we should show the social media column
+    const showSocialMedia = socialLinks.length > 0;
+
     return (
         <footer className="bg-black text-white">
             <div className="w-full md:pl-40 mx-auto px-4 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div className="lg:col-span-1">
-                        <div className="space-y-4">
-                            {displaySocialLinks.map((social) => (
-                                <Link
-                                    key={social.label}
-                                    href={social.href}
-                                    className="flex items-center gap-2 hover:text-gray-300 transition-colors"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    {social.icon}
-                                    <span>{social.label}</span>
-                                </Link>
-                            ))}
+                    {/* Only render the social media column if we have links */}
+                    {showSocialMedia && (
+                        <div className="lg:col-span-1">
+                            <div className="space-y-4">
+                                {socialLinks.map((social) => (
+                                    <Link
+                                        key={social.label}
+                                        href={social.href}
+                                        className="flex items-center gap-2 hover:text-gray-300 transition-colors"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {social.icon}
+                                        <span>{social.label}</span>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
+                    {/* Adjust grid columns based on whether social media exists */}
                     {Object.values(footerLinks).map((column, index) => (
-                        <div key={column.title} className="lg:col-span-1">
+                        <div key={column.title} className={`lg:col-span-1 ${!showSocialMedia && index === 0 ? 'lg:col-start-2' : ''}`}>
                             <h3 className="font-medium mb-4">{column.title}</h3>
                             <ul className="space-y-2">
                                 {column.links.map((link) => (
