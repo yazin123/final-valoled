@@ -1,10 +1,11 @@
-// ContactModal.js
+// src/components/ContactModal.js
 'use client'
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import emailService from '@/lib/emailService';
 
-export const ContactModal = ({ isOpen, onClose }) => {
+export const ContactModal = ({ isOpen, onClose, contactEmail = 'contact@company.com' }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -12,11 +13,41 @@ export const ContactModal = ({ isOpen, onClose }) => {
         company: '',
         message: ''
     });
+    const [submitStatus, setSubmitStatus] = useState(null); // 'loading', 'success', 'error', or null
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
-        onClose();
+        
+        try {
+            setSubmitStatus('loading');
+            
+            // Use the email service to send the email
+            const result = await emailService.sendContactEmail(formData, contactEmail);
+            
+            if (result.success) {
+                setSubmitStatus('success');
+                // Reset form after a delay
+                setTimeout(() => {
+                    setFormData({
+                        name: '',
+                        email: '',
+                        phone: '',
+                        company: '',
+                        message: ''
+                    });
+                    setSubmitStatus(null);
+                    onClose();
+                }, 2000);
+            } else {
+                setSubmitStatus('error');
+                setErrorMessage(result.error);
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            setSubmitStatus('error');
+            setErrorMessage('An unexpected error occurred. Please try again later.');
+        }
     };
 
     const handleChange = (e) => {
@@ -34,7 +65,7 @@ export const ContactModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 overflow-y-auto "
+            className="fixed inset-0 z-50 overflow-y-auto" style={{zIndex:"1001"}}
         >
             <div className="fixed inset-0 bg-black/50" onClick={onClose} />
             <div className="relative min-h-screen flex items-center justify-center p-4">
@@ -53,6 +84,18 @@ export const ContactModal = ({ isOpen, onClose }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <h2 className="text-2xl font-semibold mb-6">Contact Us</h2>
+                        
+                        {submitStatus === 'success' && (
+                            <div className="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded">
+                                Your message has been sent successfully! We'll get back to you soon.
+                            </div>
+                        )}
+                        
+                        {submitStatus === 'error' && (
+                            <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+                                {errorMessage || `There was an error sending your message. Please try again or contact us directly at ${contactEmail}.`}
+                            </div>
+                        )}
 
                         <div>
                             <label className="block text-sm mb-2">Name</label>
@@ -63,6 +106,7 @@ export const ContactModal = ({ isOpen, onClose }) => {
                                 value={formData.name}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 rounded border bg-transparent border-white/20 focus:border-white/50 transition-colors"
+                                disabled={submitStatus === 'loading'}
                             />
                         </div>
 
@@ -75,6 +119,7 @@ export const ContactModal = ({ isOpen, onClose }) => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 rounded border bg-transparent border-white/20 focus:border-white/50 transition-colors"
+                                disabled={submitStatus === 'loading'}
                             />
                         </div>
 
@@ -86,6 +131,7 @@ export const ContactModal = ({ isOpen, onClose }) => {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 rounded border bg-transparent border-white/20 focus:border-white/50 transition-colors"
+                                disabled={submitStatus === 'loading'}
                             />
                         </div>
 
@@ -97,6 +143,7 @@ export const ContactModal = ({ isOpen, onClose }) => {
                                 value={formData.company}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 rounded border bg-transparent border-white/20 focus:border-white/50 transition-colors"
+                                disabled={submitStatus === 'loading'}
                             />
                         </div>
 
@@ -109,14 +156,17 @@ export const ContactModal = ({ isOpen, onClose }) => {
                                 value={formData.message}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 rounded border bg-transparent border-white/20 focus:border-white/50 transition-colors"
+                                disabled={submitStatus === 'loading'}
                             />
                         </div>
 
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+                            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed"
+                            disabled={submitStatus === 'loading' || submitStatus === 'success'}
                         >
-                            Send Message
+                            {submitStatus === 'loading' ? 'Sending...' : 
+                             submitStatus === 'success' ? 'Message Sent' : 'Send Message'}
                         </button>
                     </form>
                 </motion.div>

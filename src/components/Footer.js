@@ -1,21 +1,61 @@
-
 'use client'
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Instagram, Facebook, Twitter, Linkedin, Youtube } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { ContactModal } from './ContactModal';
+import { useCompanySettings } from '@/hooks/api-hooks';
 
 const Footer = () => {
     const [isContactOpen, setIsContactOpen] = useState(false);
+    const { data: companySettings, isLoading } = useCompanySettings();
 
-    const socialLinks = [
+    console.log("Full company settings:", companySettings);
+
+    // Map social media icons to their respective Lucide components
+    const getSocialIcon = (type) => {
+        switch (type.toLowerCase()) {
+            case 'instagram':
+                return <Instagram size={20} />;
+            case 'facebook':
+                return <Facebook size={20} />;
+            case 'twitter':
+                return <Twitter size={20} />;
+            case 'linkedin':
+                return <Linkedin size={20} />;
+            case 'youtube':
+                return <Youtube size={20} />;
+            default:
+                return null;
+        }
+    };
+
+    // Generate social links from API data - Direct access, no nested .data
+    const socialLinks = !isLoading && companySettings?.socialMedia
+        ? Object.entries(companySettings.socialMedia).map(([key, value]) => ({
+            icon: getSocialIcon(key),
+            label: key.charAt(0).toUpperCase() + key.slice(1),
+            href: value,
+          })).filter(link => link.icon !== null)
+        : [];
+    
+    console.log("social links are:", socialLinks);
+
+    // Fallback social links in case API fails or is loading
+    const fallbackSocialLinks = [
         { icon: <Instagram size={20} />, label: 'Instagram', href: '#' },
         { icon: <Facebook size={20} />, label: 'Facebook', href: '#' },
         { icon: <Twitter size={20} />, label: 'Twitter', href: '#' },
         { icon: <Linkedin size={20} />, label: 'Linkedin', href: '#' },
         { icon: <Youtube size={20} />, label: 'Youtube', href: '#' },
     ];
+
+    const displaySocialLinks = socialLinks.length > 0 ? socialLinks : fallbackSocialLinks;
+
+    // Get contact email from API - Direct access, no nested .data
+    const contactEmail = !isLoading && companySettings?.contactEmail 
+        ? companySettings.contactEmail 
+        : 'contact@company.com';
 
     const footerLinks = {
         column2: {
@@ -52,11 +92,13 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-1">
                         <div className="space-y-4">
-                            {socialLinks.map((social) => (
+                            {displaySocialLinks.map((social) => (
                                 <Link
                                     key={social.label}
                                     href={social.href}
                                     className="flex items-center gap-2 hover:text-gray-300 transition-colors"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                 >
                                     {social.icon}
                                     <span>{social.label}</span>
@@ -113,6 +155,7 @@ const Footer = () => {
                     <ContactModal
                         isOpen={isContactOpen}
                         onClose={() => setIsContactOpen(false)}
+                        contactEmail={contactEmail}
                     />
                 )}
             </AnimatePresence>

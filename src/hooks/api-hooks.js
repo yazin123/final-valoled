@@ -1,6 +1,6 @@
 // src/hooks/api-hooks.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productAPI, projectAPI, bannerAPI, newsAPI, specificationAPI } from '@/lib/api-client';
+import { productAPI, projectAPI, bannerAPI, newsAPI, specificationAPI, companyAPI} from '@/lib/api-client';
 
 // Product Hooks
 export const useProducts = (filters) => {
@@ -14,6 +14,23 @@ export const useProducts = (filters) => {
     }),
     enabled: !!filters, // Only run query when filters is not null
     keepPreviousData: true,
+  });
+};
+
+
+
+// Company Settings Hook
+export const useCompanySettings = () => {
+  return useQuery({
+    queryKey: ['companySettings'],
+    queryFn: companyAPI.getSettings,
+    select: (response) => {
+      // Log the full response to understand its structure
+      console.log("Raw company settings response:", response);
+      
+      // Properly extract the data from the nested structure
+      return response?.data || null;
+    },
   });
 };
 

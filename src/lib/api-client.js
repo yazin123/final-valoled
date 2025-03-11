@@ -114,6 +114,22 @@ export const authAPI = {
   },
 };
 
+
+export const companyAPI = {
+  getSettings: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/company-settings');
+      console.log("retreieved social medddia data ", response)
+      logger.debug('Retrieved company settings');
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch company settings', error);
+      throw error;
+    }
+  },
+};
+
+
 // Banner APIs with error handling and logging
 export const catalogueAPI = {
   getAll: async () => {
