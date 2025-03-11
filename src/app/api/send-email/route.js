@@ -20,8 +20,8 @@ export async function POST(request) {
     const transporter = nodemailer.createTransport({
       service: 'gmail', // change as needed
       auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_APP_PASSWORD
+        user: process.env.NEXT_PUBLIC_API_EMAIL_USERNAME,
+        pass: process.env.NEXT_PUBLIC_API_EMAIL_APP_PASSWORD
       }
     });
 
@@ -34,10 +34,9 @@ export async function POST(request) {
       <h3>Message:</h3>
       <p>${message.replace(/\n/g, '<br>')}</p>
     `;
-
-    // Email options
+    
     const mailOptions = {
-      from: process.env.EMAIL_USERNAME,
+      from: process.env.NEXT_PUBLIC_API_EMAIL_USERNAME,
       to: toEmail,
       replyTo: email,
       subject: `Contact Form Submission from ${name}`,
@@ -46,13 +45,13 @@ export async function POST(request) {
 
     // Send email
     const info = await transporter.sendMail(mailOptions);
-
+console.log("success")
     return NextResponse.json(
       { success: true, messageId: info.messageId },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.log('Email sending error:', error);
     return NextResponse.json(
       { error: 'Failed to send email', details: error.message },
       { status: 500 }
