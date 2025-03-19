@@ -13,7 +13,7 @@ const addCertificateImages = async (doc, pageWidth, margin, certificatesData) =>
   const certMaxWidth = 25; // Maximum width for certificates
 
   // Add certificate section label
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.text('', pageWidth - margin - 75, certY + 5);
 
   // Get the certificate data from the certificates array
@@ -84,14 +84,21 @@ const addCertificateImages = async (doc, pageWidth, margin, certificatesData) =>
 };
 
 // Add product details section
+
 const addProductDetails = async (doc, product, margin, yPosition, contentWidth) => {
   doc.setFontSize(11);
   doc.text("PRODUCT DETAILS", margin, yPosition);
+  
+  // Add line right under the heading
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+  
   yPosition += 7;
 
   // Description (left column)
-  const descriptionWidth = contentWidth * 0.6;
-  doc.setFontSize(8);
+  const descriptionWidth = contentWidth * 0.5;
+  doc.setFontSize(10);
   const description = product.description || 'No description available';
 
   // Split description text to fit in the available width
@@ -100,7 +107,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
 
   // Product image (right column)
   const imageX = margin + descriptionWidth + 10;
-  const imageWidth = contentWidth * 0.4 - 10;
+  const imageWidth = contentWidth * 0.5 - 10;
   const imageHeight = 40;
 
   // Add actual product image if available
@@ -110,15 +117,15 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
       if (productImage) {
         // Draw white background first
         doc.setFillColor(255, 255, 255);
-        doc.rect(imageX, yPosition - 5, imageWidth, imageHeight, 'F');
-        // Add the image
-        doc.addImage(productImage, 'JPEG', imageX, yPosition - 5, imageWidth, imageHeight);
+        doc.rect(imageX, yPosition, imageWidth, imageHeight, 'F');
+        // Add the image with a slight margin-top (from -5 to 0)
+        doc.addImage(productImage, 'JPEG', imageX, yPosition, imageWidth, imageHeight);
       } else {
         // Fallback if image fails to load
         doc.setDrawColor(200, 200, 200);
         doc.setFillColor(240, 240, 240);
-        doc.rect(imageX, yPosition - 5, imageWidth, imageHeight, 'FD');
-        doc.setFontSize(8);
+        doc.rect(imageX, yPosition, imageWidth, imageHeight, 'FD');
+        doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
         doc.text("Product Image", imageX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
         doc.setTextColor(0, 0, 0);
@@ -128,92 +135,191 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
       // Fallback for error
       doc.setDrawColor(200, 200, 200);
       doc.setFillColor(240, 240, 240);
-      doc.rect(imageX, yPosition - 5, imageWidth, imageHeight, 'FD');
-      doc.setFontSize(8);
+      doc.rect(imageX, yPosition, imageWidth, imageHeight, 'FD');
+      doc.setFontSize(10);
       doc.text("Product Image", imageX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
     }
   } else {
     // No image available
     doc.setDrawColor(200, 200, 200);
     doc.setFillColor(240, 240, 240);
-    doc.rect(imageX, yPosition - 5, imageWidth, imageHeight, 'FD');
-    doc.setFontSize(8);
+    doc.rect(imageX, yPosition, imageWidth, imageHeight, 'FD');
+    doc.setFontSize(10);
     doc.text("No Image", imageX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
   }
 
   // Return new position below the description/image
   return yPosition + Math.max(splitDescription.length * 5 + 5, imageHeight + 5);
 };
-
 // Add product diagrams
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
 
   doc.setFontSize(11);
   doc.text("DRAWINGS", margin, yPosition);
+  
+  // Add line right under the heading
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+  
   yPosition += 5;
 
-  // Create a grid layout for diagrams
-  const diagramWidth = (contentWidth - 15) / 4; // 4 diagrams per row, 5px gap
-  const diagramHeight = 30;
+  // Create a flexible grid layout for diagrams
+  const maxDiagramsPerRow = 4; // Maximum 4 diagrams per row
+  const diagramGap = 5; // Gap between diagrams
+  const baseHeight = 30; // Base height for diagrams
+  
   let currentX = margin;
-  const startY = yPosition;
+  let startY = yPosition;
+  let rowHeight = baseHeight;
+  let diagramsInCurrentRow = 0;
 
   // Add each diagram with actual image
   for (let i = 0; i < diagrams.length; i++) {
-    if (i > 0 && i % 4 === 0) {
-      // Start a new row
-      currentX = margin;
-      yPosition += diagramHeight + 5;
-    }
-
     // Check if we're approaching the page end - add new page if needed
-    if (yPosition + diagramHeight > pageHeight - margin) {
+    if (yPosition + rowHeight > pageHeight - margin) {
       doc.addPage();
       yPosition = margin;
+      startY = yPosition;
+      currentX = margin;
+      diagramsInCurrentRow = 0;
     }
 
     const diagram = diagrams[i];
 
     try {
-      // Load and add diagram image
+      // Load diagram image to determine aspect ratio
       const diagramImage = await loadImageAsDataUrl(diagram);
       if (diagramImage) {
+        // Create a temporary image to get dimensions
+        const img = new Image();
+        img.src = diagramImage;
+
+        // Wait for image to load
+        await new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve; // Also resolve on error to prevent hanging
+        });
+
+        // Calculate aspect ratio
+        const aspectRatio = img.width / img.height;
+        
+        // Determine width based on aspect ratio
+        let diagramWidth;
+        let columnsToSpan = 1;
+        
+        // For wide/rectangular images, span multiple columns
+        if (aspectRatio > 1.5) {
+          // Wide image (landscape orientation)
+          columnsToSpan = Math.min(3, maxDiagramsPerRow - diagramsInCurrentRow);
+          diagramWidth = ((contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow) * columnsToSpan + ((columnsToSpan - 1) * diagramGap);
+        } else {
+          // Normal/square image
+          diagramWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
+        }
+
+        // If this diagram would overflow the row, start a new row
+        if (diagramsInCurrentRow + columnsToSpan > maxDiagramsPerRow) {
+          currentX = margin;
+          yPosition += rowHeight + diagramGap;
+          startY = yPosition;
+          diagramsInCurrentRow = 0;
+          rowHeight = baseHeight;
+        }
+
+        // Calculate height while maintaining aspect ratio
+        const diagramHeight = diagramWidth / aspectRatio;
+        
+        // Update row height if this diagram is taller
+        rowHeight = Math.max(rowHeight, diagramHeight);
+
         // Draw white background first
         doc.setFillColor(255, 255, 255);
         doc.rect(currentX, yPosition, diagramWidth, diagramHeight, 'F');
+        
         // Add the image
         doc.addImage(diagramImage, 'JPEG', currentX, yPosition, diagramWidth, diagramHeight);
+        
+        // Move to next position and update diagrams count
+        currentX += diagramWidth + diagramGap;
+        diagramsInCurrentRow += columnsToSpan;
+        
+        // If row is full, move to next row
+        if (diagramsInCurrentRow >= maxDiagramsPerRow) {
+          currentX = margin;
+          yPosition += rowHeight + diagramGap;
+          startY = yPosition;
+          diagramsInCurrentRow = 0;
+          rowHeight = baseHeight;
+        }
       } else {
-        // Fallback if image fails to load
+        // Fallback if image fails to load (use standard size)
+        const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
+        
+        // If this diagram would overflow the row, start a new row
+        if (diagramsInCurrentRow >= maxDiagramsPerRow) {
+          currentX = margin;
+          yPosition += rowHeight + diagramGap;
+          startY = yPosition;
+          diagramsInCurrentRow = 0;
+          rowHeight = baseHeight;
+        }
+        
         doc.setDrawColor(180, 180, 180);
         doc.setFillColor(230, 230, 230);
-        doc.rect(currentX, yPosition, diagramWidth, diagramHeight, 'FD');
+        doc.rect(currentX, yPosition, standardWidth, baseHeight, 'FD');
         doc.setFontSize(7);
-        doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + diagramHeight - 5);
+        doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + baseHeight - 5);
+        
+        // Move to next position
+        currentX += standardWidth + diagramGap;
+        diagramsInCurrentRow++;
       }
     } catch (e) {
       console.error("Error adding diagram image:", e);
-      // Fallback for error
+      // Fallback for error (use standard size)
+      const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
+      
+      // If this diagram would overflow the row, start a new row
+      if (diagramsInCurrentRow >= maxDiagramsPerRow) {
+        currentX = margin;
+        yPosition += rowHeight + diagramGap;
+        startY = yPosition;
+        diagramsInCurrentRow = 0;
+        rowHeight = baseHeight;
+      }
+      
       doc.setDrawColor(180, 180, 180);
       doc.setFillColor(230, 230, 230);
-      doc.rect(currentX, yPosition, diagramWidth, diagramHeight, 'FD');
+      doc.rect(currentX, yPosition, standardWidth, baseHeight, 'FD');
       doc.setFontSize(7);
-      doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + diagramHeight - 5);
+      doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + baseHeight - 5);
+      
+      // Move to next position
+      currentX += standardWidth + diagramGap;
+      diagramsInCurrentRow++;
     }
-
-    // Move to next diagram position
-    currentX += diagramWidth + 5;
   }
 
-  // Update position to below diagrams
-  return yPosition + diagramHeight + 5;
+  // Update position to below all diagrams
+  if (diagramsInCurrentRow > 0) {
+    yPosition += rowHeight;
+  }
+
+  return yPosition + 5;
 };
 
 // Add specifications section in two columns
 const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
   doc.setFontSize(11);
   doc.text("SPECIFICATIONS", margin, yPosition);
+  
+  // Add line right under the heading
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+  
   yPosition += 7;
 
   // Create data for specifications in two-column format
@@ -253,7 +359,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Key (label) styling
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.text(key, leftColX, leftColY);
 
       // Split long values to prevent overlapping
@@ -275,7 +381,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Key (label) styling
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.text(key, rightColX, rightColY);
 
       // Split long values to prevent overlapping
@@ -294,7 +400,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
     // Update Y position to the tallest column
     yPosition = Math.max(leftColY, rightColY) + 5; // Added extra space for better separation
   } else {
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.text("No specifications selected", margin, yPosition);
     yPosition += 7;
     
@@ -329,6 +435,11 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
     // Add category header
     doc.setFontSize(11);
     doc.text(category.categoryName.toUpperCase(), margin, yPosition);
+    
+    // Add line right under the heading
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+    
     yPosition += 7;
 
     // Prepare data for this category
@@ -347,65 +458,37 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
     }
 
     if (categoryItems.length > 0) {
-      // Use two columns for the features with compact layout
-      const midpoint = Math.ceil(categoryItems.length / 2);
-      const leftColItems = categoryItems.slice(0, midpoint);
-      const rightColItems = categoryItems.slice(midpoint);
-
-      // Set up columns and positioning (similar to specifications)
+      // Use single column layout
       const labelWidth = 40;
-      const leftColX = margin;
-      const leftValueX = leftColX + labelWidth;
-      const rightColX = margin + contentWidth / 2 + 5;
-      const rightValueX = rightColX + labelWidth;
-      let leftColY = yPosition;
-      let rightColY = yPosition;
+      const valueX = margin + labelWidth;
+      let currentY = yPosition;
       const lineHeight = 4;
       const rowPadding = 1;
 
-      // Draw left column
-      for (let i = 0; i < leftColItems.length; i++) {
-        const item = leftColItems[i];
+      // Draw single column of features
+      for (let i = 0; i < categoryItems.length; i++) {
+        const item = categoryItems[i];
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.text(item.name, leftColX, leftColY);
+        doc.setFontSize(10);
+        doc.text(item.name, margin, currentY);
 
         // Split long values to prevent overlapping
-        const splitValue = doc.splitTextToSize(String(item.value), contentWidth / 2 - labelWidth - 10);
-        doc.text(splitValue, leftValueX, leftColY);
+        const splitValue = doc.splitTextToSize(String(item.value), contentWidth - labelWidth);
+        doc.text(splitValue, valueX, currentY);
         
         // Adjust the row height based on the number of lines in the value
         if (splitValue.length > 1) {
-          leftColY += (splitValue.length - 1) * lineHeight;
+          currentY += (splitValue.length - 1) * lineHeight;
         }
 
-        leftColY += lineHeight + rowPadding;
+        currentY += lineHeight + rowPadding;
       }
-
-      // Draw right column
-      for (let i = 0; i < rightColItems.length; i++) {
-        const item = rightColItems[i];
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.text(item.name, rightColX, rightColY);
-
-        // Split long values to prevent overlapping
-        const splitValue = doc.splitTextToSize(String(item.value), contentWidth / 2 - labelWidth - 10);
-        doc.text(splitValue, rightValueX, rightColY);
-        
-        // Adjust the row height based on the number of lines in the value
-        if (splitValue.length > 1) {
-          rightColY += (splitValue.length - 1) * lineHeight;
-        }
-
-        rightColY += lineHeight + rowPadding;
-      }
-      // Update Y position to the tallest column
-      yPosition = Math.max(leftColY, rightColY) + 1;
+      
+      // Update Y position
+      yPosition = currentY + 1;
 
       // Add horizontal line after each category
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+ 
       yPosition += 10;
     }
   }
@@ -413,83 +496,196 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
   return yPosition;
 };
 
-// Add accessories section
+// Add accessories section - Modified for 2-column layout
 const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, pageWidth, contentWidth) => {
   if (!accessories || accessories.length === 0) return yPosition;
 
   yPosition += 5;
   doc.setFontSize(11);
   doc.text("ACCESSORIES", margin, yPosition);
-  yPosition += 5;
+  
+  // Add line right under the heading
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+  
+  yPosition += 10;
 
-  // Process all accessories in a different layout (horizontal rows)
-  for (const accessory of accessories) {
-    if (accessory.selected_values && accessory.selected_values.length > 0) {
-      // Process each accessory value in horizontal row format
-      for (const value of accessory.selected_values) {
-        // Check if we're approaching the page end - add new page if needed
-        if (yPosition + 40 > pageHeight - margin) { // Need more space for horizontal layout
-          doc.addPage();
-          yPosition = margin;
-
-          // Re-add the accessories header on the new page
-          doc.setFontSize(11);
-          doc.text("ACCESSORIES (continued)", margin, yPosition);
-          yPosition += 5;
-          doc.setDrawColor(100, 100, 100);
-          doc.line(margin, yPosition, pageWidth - margin, yPosition);
-          yPosition += 10;
-        }
-
-        // Create gray box for image on the left (smaller than before)
-        const imageBoxWidth = 40; // Reduced from 80
-        const rowHeight = 20;    // Reduced from 30
-
-        // Add image if available
-        if (value.image_url) {
-          try {
-            const accessoryImage = await loadImageAsDataUrl(value.image_url);
-            if (accessoryImage) {
-              // Add white background first
-              doc.setFillColor(255, 255, 255);
-              doc.rect(margin + 2, yPosition + 2, imageBoxWidth - 4, rowHeight - 4, 'F');
-              // Add image centered in the gray box (slightly smaller margins)
-              doc.addImage(accessoryImage, 'JPEG', margin + 2, yPosition + 2, imageBoxWidth - 4, rowHeight - 4);
-            }
-          } catch (e) {
-            console.error("Error adding accessory image:", e);
-          }
-        }
-
-        // Add text content to the right of the image
-        const textX = margin + imageBoxWidth + 10;
-        const textWidth = contentWidth - imageBoxWidth - 10;
-
-        // Get all the text content
-        const valueTitle = value.value || 'Accessory';
-        const valueDescription = value.value_shortform || '';
-
-        // Add title in normal
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
-        doc.text(valueTitle, textX, yPosition + 10);
-
-        // Add description in normal font
-        if (valueDescription) {
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-          const descriptionLines = doc.splitTextToSize(valueDescription, textWidth);
-          doc.text(descriptionLines, textX, yPosition + 18);
-        }
-
-        // Add bottom border
-        yPosition += rowHeight + 5;
-        doc.setDrawColor(200, 200, 200);
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
+  // Process accessories in 2-column layout
+  if (accessories.some(acc => acc.selected_values && acc.selected_values.length > 0)) {
+    // Calculate column widths and positions
+    const colWidth = (contentWidth - 10) / 2; // 10px gap between columns
+    const col1X = margin;
+    const col2X = margin + colWidth + 10;
+    let col1Y = yPosition;
+    let col2Y = yPosition;
+    
+    // Process all accessories
+    const allAccessoryValues = [];
+    for (const accessory of accessories) {
+      if (accessory.selected_values && accessory.selected_values.length > 0) {
+        allAccessoryValues.push(...accessory.selected_values);
       }
     }
+    
+    // Split into two columns
+    const midpoint = Math.ceil(allAccessoryValues.length / 2);
+    const leftColAccessories = allAccessoryValues.slice(0, midpoint);
+    const rightColAccessories = allAccessoryValues.slice(midpoint);
+    
+    // Define row dimensions
+    const imageBoxWidth = 25; // Smaller image box
+    const rowHeight = 20;
+    const textPadding = 5;
+    
+    // Process left column
+    for (let i = 0; i < leftColAccessories.length; i++) {
+      const value = leftColAccessories[i];
+      
+      // Check if we need a new page
+      if (col1Y + rowHeight > pageHeight - margin) {
+        doc.addPage();
+        col1Y = margin + 10;
+        col2Y = margin + 10;
+        
+        // Re-add header on new page
+        doc.setFontSize(11);
+        doc.text("ACCESSORIES (continued)", margin, margin);
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
+      }
+      
+      // Draw image area
+      if (value.image_url) {
+        try {
+          const accessoryImage = await loadImageAsDataUrl(value.image_url);
+          if (accessoryImage) {
+            // Add white background
+            doc.setFillColor(255, 255, 255);
+            doc.rect(col1X, col1Y, imageBoxWidth, rowHeight, 'F');
+            // Add image
+            doc.addImage(accessoryImage, 'JPEG', col1X, col1Y, imageBoxWidth, rowHeight);
+          } else {
+            // Fallback
+            doc.setDrawColor(180, 180, 180);
+            doc.setFillColor(230, 230, 230);
+            doc.rect(col1X, col1Y, imageBoxWidth, rowHeight, 'FD');
+          }
+        } catch (e) {
+          console.error("Error adding accessory image:", e);
+          // Fallback
+          doc.setDrawColor(180, 180, 180);
+          doc.setFillColor(230, 230, 230);
+          doc.rect(col1X, col1Y, imageBoxWidth, rowHeight, 'FD');
+        }
+      } else {
+        // No image
+        doc.setDrawColor(180, 180, 180);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(col1X, col1Y, imageBoxWidth, rowHeight, 'FD');
+      }
+      
+      // Add text content
+      const textX = col1X + imageBoxWidth + textPadding;
+      const textWidth = colWidth - imageBoxWidth - textPadding;
+      
+      // Title
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const valueTitle = value.value || 'Accessory';
+      doc.text(valueTitle, textX, col1Y + 8);
+      
+      // Description
+      if (value.value_shortform) {
+        doc.setFontSize(7);
+        const descriptionLines = doc.splitTextToSize(value.value_shortform, textWidth);
+        doc.text(descriptionLines, textX, col1Y + 14);
+      }
+      
+      // Move to next position
+      col1Y += rowHeight + 5;
+    }
+    
+    // Process right column
+    for (let i = 0; i < rightColAccessories.length; i++) {
+      const value = rightColAccessories[i];
+      
+      // Check if we need a new page - if left column already moved to new page
+      if (col2Y + rowHeight > pageHeight - margin) {
+        // Only add new page if we haven't already in the left column loop
+        if (col2Y === col1Y - (rowHeight + 5)) {
+          doc.addPage();
+          col1Y = margin + 10; // Reset both columns
+          col2Y = margin + 10;
+          
+          // Re-add header on new page
+          doc.setFontSize(11);
+          doc.text("ACCESSORIES (continued)", margin, margin);
+          doc.setDrawColor(200, 200, 200);
+          doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
+        }
+      }
+      
+      // Draw image area
+      if (value.image_url) {
+        try {
+          const accessoryImage = await loadImageAsDataUrl(value.image_url);
+          if (accessoryImage) {
+            // Add white background
+            doc.setFillColor(255, 255, 255);
+            doc.rect(col2X, col2Y, imageBoxWidth, rowHeight, 'F');
+            // Add image
+            doc.addImage(accessoryImage, 'JPEG', col2X, col2Y, imageBoxWidth, rowHeight);
+          } else {
+            // Fallback
+            doc.setDrawColor(180, 180, 180);
+            doc.setFillColor(230, 230, 230);
+            doc.rect(col2X, col2Y, imageBoxWidth, rowHeight, 'FD');
+          }
+        } catch (e) {
+          console.error("Error adding accessory image:", e);
+          // Fallback
+          doc.setDrawColor(180, 180, 180);
+          doc.setFillColor(230, 230, 230);
+          doc.rect(col2X, col2Y, imageBoxWidth, rowHeight, 'FD');
+        }
+      } else {
+        // No image
+        doc.setDrawColor(180, 180, 180);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(col2X, col2Y, imageBoxWidth, rowHeight, 'FD');
+      }
+      
+      // Add text content
+      const textX = col2X + imageBoxWidth + textPadding;
+      const textWidth = colWidth - imageBoxWidth - textPadding;
+      
+      // Title
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const valueTitle = value.value || 'Accessory';
+      doc.text(valueTitle, textX, col2Y + 8);
+      
+      // Description
+      if (value.value_shortform) {
+        doc.setFontSize(7);
+        const descriptionLines = doc.splitTextToSize(value.value_shortform, textWidth);
+        doc.text(descriptionLines, textX, col2Y + 14);
+      }
+      
+      // Move to next position
+      col2Y += rowHeight + 5;
+    }
+    
+    // Return the position of the tallest column
+    yPosition = Math.max(col1Y, col2Y);
+    
+  } else {
+    // No accessories message
+    doc.setFontSize(10);
+    doc.text("No accessories selected", margin, yPosition);
+    yPosition += 10;
   }
 
   return yPosition;
@@ -557,7 +753,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
   doc.text(product.name || 'Product Name', margin, yPosition);
 
   yPosition += 8;
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.text(`Product Code: ${fullProductCode || product.code || 'N/A'}`, margin, yPosition);
 
   // Add certificate images on the right side
@@ -565,16 +761,14 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
 
   // Add horizontal line
   yPosition += 7;
-  doc.setDrawColor(200, 200, 200);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  
   yPosition += 10;
 
   // Row 2: Product Details - Description and Image
   yPosition = await addProductDetails(doc, product, margin, yPosition, contentWidth);
 
   // Add horizontal line
-  doc.setDrawColor(200, 200, 200);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  
   yPosition += 10;
 
   // Row 2.5: Product Diagrams (if available)
@@ -582,8 +776,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
     yPosition = await addProductDiagrams(doc, product.product_diagrams, margin, yPosition, pageHeight, contentWidth);
     
     // Add horizontal line
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    
     yPosition += 10;
   }
 
@@ -603,8 +796,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
   }
 
   // Add horizontal line
-  doc.setDrawColor(200, 200, 200);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  
   yPosition += 10;
 
   // Row 4: Features and other categories - Also in 2 columns
@@ -618,7 +810,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
     yPosition = margin + 10;
   }
 
-  // Row 5: Accessories (if available) - With smaller image boxes
+  // Row 5: Accessories (if available) - With 2-column layout
   if (product.accessories) {
     yPosition = await addAccessories(doc, product.accessories, margin, yPosition, pageHeight, pageWidth, contentWidth);
   }

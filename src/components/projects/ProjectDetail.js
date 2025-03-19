@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Play } from 'lucide-react';
 
 import { useProject } from '@/hooks/api-hooks';
 
@@ -19,6 +19,44 @@ const LoadingSkeleton = () => (
         </div>
     </div>
 );
+
+// Function to check if a file is a video based on extension
+const isVideo = (url) => {
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.wmv', '.flv', '.mkv'];
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+};
+
+// Media item component that renders either an image or video
+const MediaItem = ({ src, alt, className, desktopView = false }) => {
+    if (isVideo(src)) {
+        return (
+            <div className={`relative ${className}`}>
+                <video 
+                    src={src}
+                    controls
+                    className="w-full h-full object-cover"
+                    poster="/video-placeholder.jpg"
+                />
+                {desktopView && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+                        <Play className="w-12 h-12 text-white" />
+                    </div>
+                )}
+            </div>
+        );
+    }
+    
+    return (
+        <div className={`relative ${className}`}>
+            <Image
+                src={src}
+                alt={alt}
+                fill
+                className="object-cover hover:scale-105 transition-transform duration-500"
+            />
+        </div>
+    );
+};
 
 const ProjectDetail = ({ projectId }) => {
    
@@ -73,13 +111,25 @@ const ProjectDetail = ({ projectId }) => {
                     </span>
                 </div>
                 <div className="relative w-full h-[60vh]">
-                    <Image
-                        src={project.banner_image?.[0] || '/placeholder.jpg'}
-                        alt={project.name}
-                        fill
-                        priority
-                        className="object-cover"
-                    />
+                    {isVideo(project.banner_image?.[0]) ? (
+                        <video 
+                            src={project.banner_image?.[0]} 
+                            alt={project.name} 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <Image
+                            src={project.banner_image?.[0] || '/placeholder.jpg'}
+                            alt={project.name}
+                            fill
+                            priority
+                            className="object-cover"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -134,23 +184,23 @@ const ProjectDetail = ({ projectId }) => {
                 </div>
             </div>
 
-            {/* Project Image Gallery */}
+            {/* Project Image and Video Gallery */}
             {project.media_resource && project.media_resource.length > 0 && (
                 <div className="mt-16 md:px-6 px-4">
                     {/* Desktop View - Horizontal Scroll with Hover Expand */}
                     <div className="hidden md:flex space-x-4 overflow-x-auto pb-8">
-                        {project.media_resource.map((image, index) => (
+                        {project.media_resource.map((media, index) => (
                             <div
                                 key={index}
                                 className="relative flex-shrink-0 w-[20%] hover:w-[60%] 
                                     transition-all duration-500 ease-in-out cursor-pointer h-[400px]"
                             >
                                 <div className="w-full h-full overflow-hidden rounded-lg">
-                                    <Image
-                                        src={image}
-                                        alt={`${project.name} image ${index + 1}`}
-                                        fill
-                                        className="object-cover hover:scale-105 transition-transform duration-500"
+                                    <MediaItem 
+                                        src={media} 
+                                        alt={`${project.name} media ${index + 1}`}
+                                        className="w-full h-full"
+                                        desktopView={true}
                                     />
                                 </div>
                             </div>
@@ -159,16 +209,15 @@ const ProjectDetail = ({ projectId }) => {
 
                     {/* Mobile View - Grid */}
                     <div className="grid grid-cols-1 gap-4 md:hidden">
-                        {project.media_resource.map((image, index) => (
+                        {project.media_resource.map((media, index) => (
                             <div
                                 key={index}
                                 className="relative w-full aspect-[4/3] rounded-lg overflow-hidden"
                             >
-                                <Image
-                                    src={image}
-                                    alt={`${project.name} image ${index + 1}`}
-                                    fill
-                                    className="object-cover"
+                                <MediaItem 
+                                    src={media} 
+                                    alt={`${project.name} media ${index + 1}`}
+                                    className="w-full h-full"
                                 />
                             </div>
                         ))}

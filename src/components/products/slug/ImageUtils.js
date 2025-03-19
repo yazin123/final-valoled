@@ -37,7 +37,7 @@ export const loadImageAsDataUrl = (url) => {
  */
 export const loadLogoImage = async () => {
   try {
-    const logoUrl = '/logo-black.png';
+    const logoUrl = '/colorlogo.png';
     return await loadImageAsDataUrl(logoUrl);
   } catch (error) {
     console.error('Error loading logo image:', error);
