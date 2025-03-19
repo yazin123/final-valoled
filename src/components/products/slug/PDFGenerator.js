@@ -737,7 +737,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
   // Setup document
   const logoImage = await loadLogoImage();
   const logoHeight = 7;
-  let logoWidth = 42; // Default, will be adjusted based on aspect ratio
+  let logoWidth = 48; // Default, will be adjusted based on aspect ratio
 
   // If logo is loaded, calculate width based on aspect ratio
   if (logoImage) {
