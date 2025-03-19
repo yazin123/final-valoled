@@ -248,6 +248,8 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         // Add the image
         doc.addImage(diagramImage, 'JPEG', currentX, yPosition, diagramWidth, diagramHeight);
 
+       
+
         // Move to next position and update diagrams count
         currentX += diagramWidth + diagramGap;
         diagramsInCurrentRow += columnsToSpan;
@@ -260,6 +262,9 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
           diagramsInCurrentRow = 0;
           rowHeight = baseHeight;
         }
+
+       
+
       } else {
         // Fallback if image fails to load (use standard size)
         const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
@@ -311,10 +316,10 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
 
   // Update position to below all diagrams
   if (diagramsInCurrentRow > 0) {
-    yPosition += rowHeight;
+    yPosition += rowHeight -10;
   }
 
-  return yPosition + 5;
+  return yPosition ;
 };
 
 // Add specifications section in two columns
