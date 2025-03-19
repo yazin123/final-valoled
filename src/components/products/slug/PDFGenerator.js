@@ -367,9 +367,9 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       const [key, value] = leftColSpecs[i];
 
       // Key (label) styling
-
+      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
-      setFontStyle(doc,'light').text(key, leftColX, leftColY);
+      setFontStyle(doc,'normal').text(key, leftColX, leftColY);
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
@@ -389,9 +389,9 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       const [key, value] = rightColSpecs[i];
 
       // Key (label) styling
-
+      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
-      setFontStyle(doc,'light').text(key, rightColX, rightColY);
+      setFontStyle(doc,'normal').text(key, rightColX, rightColY);
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
@@ -479,7 +479,7 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
         const item = categoryItems[i];
         
         doc.setFontSize(8);
-        setFontStyle(doc,'light').text(item.name, margin, currentY);
+        setFontStyle(doc,'normal').text(item.name, margin, currentY);
 
         // Split long values to prevent overlapping
         const splitValue = doc.splitTextToSize(String(item.value), contentWidth - labelWidth);
@@ -608,7 +608,7 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
       if (value.value_shortform) {
         doc.setFontSize(8);
         const descriptionLines = doc.splitTextToSize(value.value_shortform, textWidth);
-        setFontStyle(doc,'light').text(descriptionLines, textX, col1Y + 14);
+        doc.text(descriptionLines, textX, col1Y + 14);
       }
 
       // Move to next position
@@ -628,7 +628,10 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
           col2Y = margin + 10;
 
           // Re-add header on new page
-          
+          doc.setFontSize(12);
+          doc.text("ACCESSORIES (continued)", margin, margin);
+          doc.setDrawColor(0, 0, 0);
+          doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
         }
       }
 
@@ -733,8 +736,8 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
 
   // Setup document
   const logoImage = await loadLogoImage();
-  const logoHeight = 7;
-  let logoWidth = 42; // Default, will be adjusted based on aspect ratio
+  const logoHeight = 8;
+  let logoWidth = 48; // Default, will be adjusted based on aspect ratio
 
   // If logo is loaded, calculate width based on aspect ratio
   if (logoImage) {
