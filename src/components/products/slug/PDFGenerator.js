@@ -113,7 +113,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   // Split description text to fit in the left column width
   
   const splitDescription = doc.splitTextToSize(description, leftColumnWidth -20);
-  setFontStyle(doc, 'light').text(splitDescription, leftColumnX, yPosition);
+  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition);
 
   // Right column - Product image
   const imageWidth = rightColumnWidth ;
