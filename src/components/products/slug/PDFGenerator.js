@@ -533,7 +533,7 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
     const rightColAccessories = allAccessoryValues.slice(midpoint);
     
     // Define row dimensions
-    const imageBoxWidth = 25; // Smaller image box
+    const imageBoxWidth = 35; // Smaller image box
     const rowHeight = 20;
     const textPadding = 5;
     
@@ -549,7 +549,7 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
         
         // Re-add header on new page
         doc.setFontSize(11);
-        doc.text("ACCESSORIES (continued)", margin, margin);
+       
         doc.setDrawColor(200, 200, 200);
         doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
       }
