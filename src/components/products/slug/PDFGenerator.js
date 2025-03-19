@@ -373,7 +373,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc,'light').text(splitValue, leftValueX, leftColY);
+      setFontStyle(doc,'nomal').text(splitValue, leftValueX, leftColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -395,7 +395,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc,'light').text(splitValue, rightValueX, rightColY);
+      setFontStyle(doc,'nomal').text(splitValue, rightValueX, rightColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -483,7 +483,7 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
 
         // Split long values to prevent overlapping
         const splitValue = doc.splitTextToSize(String(item.value), contentWidth - labelWidth);
-        setFontStyle(doc,'light').text(splitValue, valueX, currentY);
+        setFontStyle(doc,'nomal').text(splitValue, valueX, currentY);
 
         // Adjust the row height based on the number of lines in the value
         if (splitValue.length > 1) {
@@ -809,7 +809,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode) => {
   setFontStyle(doc,'normal').text(codeLabel, margin, yPosition);
   // Switch to light font for the code itself and position it after the label
   doc.setFont('Helvetica', 'light');
-  setFontStyle(doc,'light').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
+  setFontStyle(doc,'nomal').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
   // Reset font to normal
   doc.setFont('Helvetica', 'normal');
 
