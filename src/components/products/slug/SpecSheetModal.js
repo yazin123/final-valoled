@@ -2,13 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, Loader2, Check } from 'lucide-react';
 import { generatePDF } from './PDFGenerator';
+import { useCompanySettings } from '@/hooks/api-hooks';
 
 // Main Modal Component for Spec Sheet
 const SpecSheetModal = ({ isOpen, onClose, product, selectedSpecs, fullProductCode }) => {
   const [status, setStatus] = useState('idle'); // 'idle', 'generating', 'completed', 'error'
   const [errorMessage, setErrorMessage] = useState('');
   const isMounted = useRef(true);
-
+  const { data: companySettings } = useCompanySettings();
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -28,7 +29,7 @@ const SpecSheetModal = ({ isOpen, onClose, product, selectedSpecs, fullProductCo
     try {
       setStatus('generating');
       
-      await generatePDF(safeProduct, safeSpecs, fullProductCode);
+      await generatePDF(safeProduct, safeSpecs, fullProductCode, companySettings.additionalInfo);
       
       if (isMounted.current) {
         setStatus('completed');
