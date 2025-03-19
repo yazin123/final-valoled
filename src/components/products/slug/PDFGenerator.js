@@ -101,10 +101,8 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   setFontStyle(doc, 'normal').text("PRODUCT DETAILS", leftColumnX, yPosition);
 
   // Add line under the heading - only as wide as the left column
-  doc.setDrawColor(0, 0, 0);
-  doc.line(leftColumnX, yPosition + 2, leftColumnX + leftColumnWidth - 10, yPosition + 2);
 
-  yPosition += 7;
+  yPosition += 10;
 
   // Left column - Description
   doc.setFontSize(8);
@@ -112,8 +110,8 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
 
   // Split description text to fit in the left column width
   
-  const splitDescription = doc.splitTextToSize(description, leftColumnWidth -20);
-  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition);
+  const splitDescription = doc.splitTextToSize(description, leftColumnWidth -10);
+  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition -1);
 
   // Right column - Product image
   const imageWidth = rightColumnWidth ;
@@ -126,9 +124,9 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
       if (productImage) {
         // Draw white background first
         doc.setFillColor(255, 255, 255);
-        doc.rect(rightColumnX, yPosition - 7, imageWidth, imageHeight, 'F');
+        doc.rect(rightColumnX, yPosition - 4, imageWidth, imageHeight, 'F');
         // Add the image
-        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition - 7, imageWidth, imageHeight);
+        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition -4, imageWidth, imageHeight);
       } else {
         // Fallback if image fails to load
         doc.setDrawColor(0, 0, 0);
@@ -221,7 +219,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         // For wide/rectangular images, span multiple columns
         if (aspectRatio > 1.5) {
           // Wide image (landscape orientation)
-          columnsToSpan = Math.min(3, maxDiagramsPerRow - diagramsInCurrentRow);
+          columnsToSpan = Math.min(4, maxDiagramsPerRow - diagramsInCurrentRow);
           diagramWidth = ((contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow) * columnsToSpan + ((columnsToSpan - 1) * diagramGap);
         } else {
           // Normal/square image
