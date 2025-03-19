@@ -132,14 +132,14 @@ const Footer = () => {
             </div>
 
             <div className="py-16 border-t border-gray-800">
-                <div className="flex flex-wrap gap-4 justify-center text-sm text-gray-400">
-                    <Link href="/terms-and-conditions" className="hover:text-white transition-colors">
-                        Terms and Conditions
+                <div className="flex flex-wrap gap-4 justify-center md:text-sm text-xs text-gray-400">
+                    <Link href="/terms-and-conditions" className="hover:text-white transition-colors ">
+                        Terms & Conditions
                     </Link>
-                    <Link href="/privacy-policy" className="hover:text-white transition-colors">
+                    <Link href="/privacy-policy" className="hover:text-white transition-colors ">
                         Privacy Policy
                     </Link>
-                    <Link href="/cookie-policy" className="hover:text-white transition-colors">
+                    <Link href="/cookie-policy" className="hover:text-white transition-colors ">
                         Cookie Policy
                     </Link>
                 </div>

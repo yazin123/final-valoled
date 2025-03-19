@@ -11,7 +11,7 @@ const ProjectPage = () => {
     console.log("params id", projectId)
     
     return (
-        <div className={`min-h-screen w-full mx-auto md:py-32 py-16 
+        <div className={`min-h-screen w-full mx-auto md:pt-32 py-16 
             text-white`}
         >   
 

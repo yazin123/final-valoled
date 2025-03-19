@@ -56,7 +56,7 @@ const NewsDetailPage = () => {
     };
 
     return (
-        <div className={`min-h-screen w-full mx-auto md:py-32 py-16 text-white`}>
+        <div className={`min-h-screen w-full mx-auto md:pt-32 pt-16  text-white`}>
             <NewsDetail news={formattedNews} />
         </div>
     );

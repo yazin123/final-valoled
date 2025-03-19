@@ -42,7 +42,7 @@ const NewsDetail = ({ news }) => {
 
             </div>
 
-            <div className="md:px-40  px-4 py-3 mx-auto">
+            <div className="md:px-40  px-4 py-16 mx-auto">
             <div className={`prose max-w-none prose-invert`}
                             dangerouslySetInnerHTML={{ __html: newsData.content }}>
                         </div>

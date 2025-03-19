@@ -84,7 +84,7 @@ const ProjectDetail = ({ projectId }) => {
             </div>
 
             {/* Project Details */}
-            <div className="md:px-6 px-4 py-12">
+            <div className="md:px-6 px-4  pt-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     {/* Left Column - Project Info */}
                     <div className={`space-y-6 p-6 rounded-lg transition-colors

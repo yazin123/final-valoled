@@ -3,9 +3,50 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { researchAPI } from '@/lib/api-client';
-import Common from '@/components/Common';
+
 import Image from 'next/image';
 import Link from 'next/link';
+
+const Common = ({ data }) => {
+    if (!data) {
+        return (
+            <div className="min-h-screen w-full mx-auto md:py-32 py-16 text-white">
+                <div className="md:px-6 px-4">
+                    <h1 className="text-5xl">Content Not Available</h1>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen w-full mx-auto md:pt-32 pt-16 text-white">
+            <div className="md:px-6 px-4">
+                <h1 className="text-4xl">{data.name}</h1>
+            </div>
+
+            {data.image && (
+                <div className="relative w-full h-[60vh] mt-4">
+                    <Image
+                        src={data.image}
+                        alt={data.name}
+                        fill
+                        className="object-cover"
+                        sizes="100vw"
+                        priority
+                    />
+                </div>
+            )}
+
+            {data.content && (
+                <div 
+                    className="w-full md:px-40 mx-auto px-4 py-16"
+                    dangerouslySetInnerHTML={{ __html: data.content }}
+                />
+            )}
+        </div>
+    );
+};
+
 
 const ResearchDevelopmentPage = () => {
     // Fetch main page content
@@ -53,9 +94,9 @@ const ResearchDevelopmentPage = () => {
 
             {/* Research Items Section */}
             {researchItems && researchItems.length > 0 && (
-                <div className="min-h-screen w-full md:px-6 mx-auto px-4 text-white">
+                <div className="min-h-screen w-full md:px-6 mx-auto px-4 pb-16 text-white">
                     <div className=" ">
-                        <div className="space-y-24">
+                        <div className="space-y-12">
                             {researchItems.map((item) => (
                                 <div 
                                     key={item._id}
