@@ -170,7 +170,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
 
-  yPosition += 5;
+  yPosition += 7; // Consistent spacing after heading
 
   // Create a flexible grid layout for diagrams
   const maxDiagramsPerRow = 4; // Maximum 4 diagrams per row
@@ -248,8 +248,6 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         // Add the image
         doc.addImage(diagramImage, 'JPEG', currentX, yPosition, diagramWidth, diagramHeight);
 
-       
-
         // Move to next position and update diagrams count
         currentX += diagramWidth + diagramGap;
         diagramsInCurrentRow += columnsToSpan;
@@ -257,14 +255,11 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         // If row is full, move to next row
         if (diagramsInCurrentRow >= maxDiagramsPerRow) {
           currentX = margin;
-          yPosition += rowHeight + diagramGap;
+          yPosition += rowHeight + 2.5; // Reduced gap between diagram rows
           startY = yPosition;
           diagramsInCurrentRow = 0;
           rowHeight = baseHeight;
         }
-
-       
-
       } else {
         // Fallback if image fails to load (use standard size)
         const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
@@ -314,14 +309,16 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
     }
   }
 
-  // Update position to below all diagrams
+  // Update position to below all diagrams with consistent spacing
   if (diagramsInCurrentRow > 0) {
-    yPosition += rowHeight -10;
+    yPosition += rowHeight + 7; // Consistent spacing after diagrams
+  } else {
+    // If the last row was completed, still add proper spacing
+    yPosition += 7;
   }
 
-  return yPosition ;
+  return yPosition;
 };
-
 // Add specifications section in two columns
 const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
   doc.setFontSize(12);
@@ -723,8 +720,6 @@ const setFontStyle = (doc, style) => {
 
 // Main PDF generation function
 export const generatePDF = async (product, selectedSpecs, fullProductCode, additionalinfo) => {
-
-
   // Create new PDF document (A4 size)
   const doc = new jsPDF();
   // Add Helvetica font to the document
@@ -833,20 +828,17 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   yPosition = await addProductDetails(doc, product, margin, yPosition, contentWidth);
 
   // Add horizontal line
-
-  yPosition += 10;
+  yPosition += 7; // Consistent spacing before Drawings section
 
   // Row 2.5: Product Diagrams (if available)
   if (product.product_diagrams) {
     yPosition = await addProductDiagrams(doc, product.product_diagrams, margin, yPosition, pageHeight, contentWidth);
-
-    // Add horizontal line
-
-    yPosition += 10;
+    
+    // Spacing is now handled within the addProductDiagrams function
   }
 
   // Check if we're approaching the page end - add new page if needed
-  if (yPosition > pageHeight - 50) {
+  if (yPosition > pageHeight - 60) { // Increased safety margin
     doc.addPage();
     yPosition = margin + 10;
   }
@@ -855,14 +847,13 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   yPosition = addSpecifications(doc, selectedSpecs, margin, yPosition, contentWidth);
 
   // Check if we're approaching the page end - add new page if needed
-  if (yPosition > pageHeight - 50) {
+  if (yPosition > pageHeight - 60) { // Increased safety margin
     doc.addPage();
     yPosition = margin + 10;
   }
 
   // Add horizontal line
-
-  yPosition += 10;
+  yPosition += 7; // Consistent spacing before Features section
 
   // Row 4: Features and other categories - Also in 2 columns
   if (product.specSheet) {
@@ -870,7 +861,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   }
 
   // Check if we're approaching the page end - add new page if needed
-  if (yPosition > pageHeight - 50) {
+  if (yPosition > pageHeight - 60) { // Increased safety margin
     doc.addPage();
     yPosition = margin + 10;
   }
