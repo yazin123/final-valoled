@@ -158,12 +158,14 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   // Return new position below the taller of description or image
   return yPosition + Math.max(splitDescription.length * 5 + 5, imageHeight);
 };
-// Add product diagrams
+
+// Add product diagrams with natural width adaptation
+// Add product diagrams with grid-based layout and ratio-based column allocation
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
 
   doc.setFontSize(12);
-  setFontStyle(doc,'normal').text("DRAWINGS", margin, yPosition);
+  setFontStyle(doc, 'normal').text("DRAWINGS", margin, yPosition);
 
   // Add line right under the heading
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -172,151 +174,157 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
 
   yPosition += 7; // Consistent spacing after heading
 
-  // Create a flexible grid layout for diagrams
-  const maxDiagramsPerRow = 4; // Maximum 4 diagrams per row
+  // Grid configuration
+  const totalCols = 4; // Exactly 4 columns per row
   const diagramGap = 5; // Gap between diagrams
-  const baseHeight = 30; // Base height for diagrams
+  const standardHeight = 40; // Fixed standard height for all rows
+  
+  // Calculate standard column width
+  const singleColWidth = (contentWidth - ((totalCols - 1) * diagramGap)) / totalCols;
 
   let currentX = margin;
-  let startY = yPosition;
-  let rowHeight = baseHeight;
-  let diagramsInCurrentRow = 0;
+  let currentY = yPosition;
+  let colsUsedInRow = 0;
 
-  // Add each diagram with actual image
   for (let i = 0; i < diagrams.length; i++) {
-    // Check if we're approaching the page end - add new page if needed
-    if (yPosition + rowHeight > pageHeight - margin) {
-      doc.addPage();
-      yPosition = margin;
-      startY = yPosition;
-      currentX = margin;
-      diagramsInCurrentRow = 0;
-    }
-
     const diagram = diagrams[i];
-
+    
     try {
-      // Load diagram image to determine aspect ratio
+      // Load diagram image
       const diagramImage = await loadImageAsDataUrl(diagram);
+      
       if (diagramImage) {
-        // Create a temporary image to get dimensions
+        // Get image dimensions
         const img = new Image();
         img.src = diagramImage;
-
+        
         // Wait for image to load
         await new Promise(resolve => {
           img.onload = resolve;
-          img.onerror = resolve; // Also resolve on error to prevent hanging
+          img.onerror = resolve;
         });
-
-        // Calculate aspect ratio
+        
+        // Calculate aspect ratio (width:height)
         const aspectRatio = img.width / img.height;
-
-        // Determine width based on aspect ratio
-        let diagramWidth;
-        let columnsToSpan = 1;
-
-        // For wide/rectangular images, span multiple columns
-        if (aspectRatio > 1.5) {
-          // Wide image (landscape orientation)
-          columnsToSpan = Math.min(4, maxDiagramsPerRow - diagramsInCurrentRow);
-          diagramWidth = ((contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow) * columnsToSpan + ((columnsToSpan - 1) * diagramGap);
+        
+        // Determine column span based on aspect ratio compared to single column ratio
+        // Single column ratio: singleColWidth / standardHeight
+        let colsToUse;
+        
+        if (aspectRatio >= 4 * (singleColWidth / standardHeight)) {
+          colsToUse = 4; // Full row width (4x wider than tall)
+        } else if (aspectRatio >= 3 * (singleColWidth / standardHeight)) {
+          colsToUse = 3; // Three columns (3x wider than tall)
+        } else if (aspectRatio >= 2 * (singleColWidth / standardHeight)) {
+          colsToUse = 2; // Two columns (2x wider than tall)
         } else {
-          // Normal/square image
-          diagramWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
+          colsToUse = 1; // One column (square or portrait)
         }
-
-        // If this diagram would overflow the row, start a new row
-        if (diagramsInCurrentRow + columnsToSpan > maxDiagramsPerRow) {
+        
+        // Check if this diagram will fit in the current row
+        if (colsUsedInRow + colsToUse > totalCols) {
+          // Move to next row
           currentX = margin;
-          yPosition += rowHeight + diagramGap;
-          startY = yPosition;
-          diagramsInCurrentRow = 0;
-          rowHeight = baseHeight;
+          currentY += standardHeight + diagramGap;
+          colsUsedInRow = 0;
+          
+          // Check if we need a new page
+          if (currentY + standardHeight > pageHeight - margin) {
+            doc.addPage();
+            currentY = margin;
+            // Re-add section header on new page
+            doc.setFontSize(12);
+            setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+            doc.setDrawColor(0, 0, 0);
+            doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
+            currentY += 7;
+          }
         }
-
-        // Calculate height while maintaining aspect ratio
-        const diagramHeight = diagramWidth / aspectRatio;
-
-        // Update row height if this diagram is taller
-        rowHeight = Math.max(rowHeight, diagramHeight);
-
-        // Draw white background first
+        
+        // Calculate the actual width this diagram will use
+        const diagramWidth = (colsToUse * singleColWidth) + ((colsToUse - 1) * diagramGap);
+        
+        // Draw white background
         doc.setFillColor(255, 255, 255);
-        doc.rect(currentX, yPosition, diagramWidth, diagramHeight, 'F');
-
-        // Add the image
-        doc.addImage(diagramImage, 'JPEG', currentX, yPosition, diagramWidth, diagramHeight);
-
-        // Move to next position and update diagrams count
+        doc.rect(currentX, currentY, diagramWidth, standardHeight, 'F');
+        
+        // Add the image with proper scaling
+        doc.addImage(diagramImage, 'JPEG', currentX, currentY, diagramWidth, standardHeight);
+        
+        // Update position for next diagram
         currentX += diagramWidth + diagramGap;
-        diagramsInCurrentRow += columnsToSpan;
-
-        // If row is full, move to next row
-        if (diagramsInCurrentRow >= maxDiagramsPerRow) {
-          currentX = margin;
-          yPosition += rowHeight + 2.5; // Reduced gap between diagram rows
-          startY = yPosition;
-          diagramsInCurrentRow = 0;
-          rowHeight = baseHeight;
-        }
+        colsUsedInRow += colsToUse;
       } else {
-        // Fallback if image fails to load (use standard size)
-        const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
-
-        // If this diagram would overflow the row, start a new row
-        if (diagramsInCurrentRow >= maxDiagramsPerRow) {
+        // Fallback for failed image load - use single column
+        if (colsUsedInRow + 1 > totalCols) {
+          // Move to next row
           currentX = margin;
-          yPosition += rowHeight + diagramGap;
-          startY = yPosition;
-          diagramsInCurrentRow = 0;
-          rowHeight = baseHeight;
+          currentY += standardHeight + diagramGap;
+          colsUsedInRow = 0;
+          
+          // Check if we need a new page
+          if (currentY + standardHeight > pageHeight - margin) {
+            doc.addPage();
+            currentY = margin;
+            // Re-add section header on new page
+            doc.setFontSize(12);
+            setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+            doc.setDrawColor(0, 0, 0);
+            doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
+            currentY += 7;
+          }
         }
-
+        
+        // Draw placeholder
         doc.setDrawColor(180, 180, 180);
         doc.setFillColor(230, 230, 230);
-        doc.rect(currentX, yPosition, standardWidth, baseHeight, 'FD');
+        doc.rect(currentX, currentY, singleColWidth, standardHeight, 'FD');
         doc.setFontSize(8);
-        doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + baseHeight - 5);
-
+        doc.text(`Drawing ${i + 1}`, currentX + singleColWidth/2 - 15, currentY + standardHeight/2);
+        
         // Move to next position
-        currentX += standardWidth + diagramGap;
-        diagramsInCurrentRow++;
+        currentX += singleColWidth + diagramGap;
+        colsUsedInRow += 1;
       }
     } catch (e) {
-      console.error("Error adding diagram image:", e);
-      // Fallback for error (use standard size)
-      const standardWidth = (contentWidth - ((maxDiagramsPerRow - 1) * diagramGap)) / maxDiagramsPerRow;
-
-      // If this diagram would overflow the row, start a new row
-      if (diagramsInCurrentRow >= maxDiagramsPerRow) {
+      console.error("Error processing diagram:", e);
+      
+      // Error fallback - use single column
+      if (colsUsedInRow + 1 > totalCols) {
+        // Move to next row
         currentX = margin;
-        yPosition += rowHeight + diagramGap;
-        startY = yPosition;
-        diagramsInCurrentRow = 0;
-        rowHeight = baseHeight;
+        currentY += standardHeight + diagramGap;
+        colsUsedInRow = 0;
+        
+        // Check if we need a new page
+        if (currentY + standardHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+          // Re-add section header on new page
+          doc.setFontSize(12);
+          setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+          doc.setDrawColor(0, 0, 0);
+          doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
+          currentY += 7;
+        }
       }
-
+      
+      // Draw placeholder
       doc.setDrawColor(180, 180, 180);
       doc.setFillColor(230, 230, 230);
-      doc.rect(currentX, yPosition, standardWidth, baseHeight, 'FD');
+      doc.rect(currentX, currentY, singleColWidth, standardHeight, 'FD');
       doc.setFontSize(8);
-      doc.text(`Drawing ${i + 1}`, currentX + 5, yPosition + baseHeight - 5);
-
+      doc.text(`Drawing ${i + 1}`, currentX + singleColWidth/2 - 15, currentY + standardHeight/2);
+      
       // Move to next position
-      currentX += standardWidth + diagramGap;
-      diagramsInCurrentRow++;
+      currentX += singleColWidth + diagramGap;
+      colsUsedInRow += 1;
     }
   }
-
-  // Update position to below all diagrams with consistent spacing
-  if (diagramsInCurrentRow > 0) {
-    yPosition += rowHeight + 7; // Consistent spacing after diagrams
-  } else {
-    // If the last row was completed, still add proper spacing
-    yPosition += 7;
-  }
-
+  
+  // Update final position for next section
+  yPosition = currentY + standardHeight + 7; // Add spacing after diagrams
+  
   return yPosition;
 };
 // Add specifications section in two columns
@@ -719,6 +727,7 @@ const setFontStyle = (doc, style) => {
 };
 
 // Main PDF generation function
+// Main PDF generation function with page refresh
 export const generatePDF = async (product, selectedSpecs, fullProductCode, additionalinfo) => {
   // Create new PDF document (A4 size)
   const doc = new jsPDF();
@@ -874,6 +883,11 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   // Save the PDF
   const fileName = `${product.code || 'product'}-specifications.pdf`;
   doc.save(fileName);
+
+  // Refresh the page after PDF generation and download
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000); // Add a 1-second delay to ensure the download starts before the page refreshes
 
   return fileName;
 };

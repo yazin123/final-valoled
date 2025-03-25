@@ -8,12 +8,12 @@ import { Loader2 } from 'lucide-react';
 
 // Animation variants
 const containerVariants = {
-  hidden: { 
+  hidden: {
     opacity: 0,
     y: 20,
     transition: { duration: 0.3 }
   },
-  visible: { 
+  visible: {
     opacity: 1,
     y: 0,
     transition: {
@@ -30,11 +30,11 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { 
+  hidden: {
     opacity: 0,
     y: 20
   },
-  visible: { 
+  visible: {
     opacity: 1,
     y: 0,
     transition: { duration: 0.3 }
@@ -64,7 +64,7 @@ const LoadingSkeleton = () => (
       }}
     />
     <div className="p-8 space-y-4">
-      <motion.div 
+      <motion.div
         className="h-4 bg-gray-800 rounded w-2/3 mx-auto"
         animate={{
           opacity: [0.3, 0.6, 0.3],
@@ -76,7 +76,7 @@ const LoadingSkeleton = () => (
           delay: 0.2
         }}
       />
-      <motion.div 
+      <motion.div
         className="h-3 bg-gray-800 rounded w-1/2 mx-auto"
         animate={{
           opacity: [0.3, 0.6, 0.3],
@@ -126,7 +126,7 @@ const ProductCard = ({ group, onSelect }) => (
         />
       </motion.div>
     </div>
-    <motion.div 
+    <motion.div
       className="pb-8"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -148,7 +148,7 @@ const FilteredProducts = ({ selectedType, selectedCategory }) => {
   const router = useRouter();
   const { data: groupsData, isLoading: isGroupsLoading } = useProductGroups();
   const groups = Array.isArray(groupsData) ? groupsData : [];
-
+  console.log("the data of categories are: ", groups)
   // Filter groups based on selected type and category
   const filteredGroups = groups.filter(group => {
     if (selectedCategory) {
@@ -170,11 +170,11 @@ const FilteredProducts = ({ selectedType, selectedCategory }) => {
       className="w-full"
     >
       <div className="space-y-6">
-        <motion.div 
+        <motion.div
           layout
           className="flex justify-between items-center"
         >
-          <motion.h2 
+          <motion.h2
             layout
             className="text-3xl font-semibold text-white"
           >
