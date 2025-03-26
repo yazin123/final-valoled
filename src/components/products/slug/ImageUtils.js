@@ -2,6 +2,7 @@
 
 /**
  * Helper function to load image from URL and convert to base64 for PDF
+ * with improved quality handling
  */
 export const loadImageAsDataUrl = (url) => {
   return new Promise((resolve, reject) => {
@@ -13,7 +14,13 @@ export const loadImageAsDataUrl = (url) => {
     // Use fetch with cors mode to try to get the image first
     fetch(url, {
       mode: 'cors',
-      headers: { 'Access-Control-Allow-Origin': '*' }
+      cache: 'no-store', // Prevent caching issues
+      headers: { 
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
       .then(response => response.blob())
       .then(blob => {
@@ -48,6 +55,7 @@ export const loadLogoImage = async () => {
 /**
  * Fallback image loading method using Image object 
  * when fetch fails due to CORS or other issues
+ * Enhanced to preserve image quality
  */
 export const fallbackImageLoad = (url, resolve) => {
   const img = new Image();
@@ -56,8 +64,9 @@ export const fallbackImageLoad = (url, resolve) => {
   img.onload = () => {
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width || 300;
-      canvas.height = img.height || 300;
+      // Maintain higher resolution for better quality
+      canvas.width = img.width || 600;  // Increased from 300
+      canvas.height = img.height || 600; // Increased from 300
       const ctx = canvas.getContext('2d');
 
       // Fill with white background first (prevents transparency issues)
@@ -67,7 +76,8 @@ export const fallbackImageLoad = (url, resolve) => {
       // Draw the image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      // Use PNG format for better quality on diagrams with details
+      const dataUrl = canvas.toDataURL('image/png', 1.0);  // Changed from JPEG to PNG with full quality
       resolve(dataUrl);
     } catch (e) {
       console.error("Error converting image to data URL:", e);
@@ -85,7 +95,8 @@ export const fallbackImageLoad = (url, resolve) => {
 };
 
 /**
- * Optimizes image data for PDF embedding
+ * Optimizes image data for PDF embedding with improved quality
+ * Especially for high-DPI technical diagrams
  */
 export const optimizeImageForPDF = async (imageUrl, maxWidth, maxHeight) => {
   try {
@@ -105,35 +116,88 @@ export const optimizeImageForPDF = async (imageUrl, maxWidth, maxHeight) => {
     // Calculate aspect ratio
     const aspectRatio = img.width / img.height;
     
-    // Calculate dimensions based on constraints while maintaining aspect ratio
+    // Calculate dimensions for high quality rendering
+    // For technical diagrams, we want to preserve as much detail as possible
     let width, height;
     
-    if (aspectRatio > 1) { // Wider than tall
-      width = Math.min(maxWidth, img.width);
-      height = width / aspectRatio;
-    } else { // Taller than wide or square
-      height = Math.min(maxHeight, img.height);
+    // For detailed diagrams, we keep larger dimensions
+    width = Math.min(img.width, maxWidth * 2); // Higher resolution than strictly needed
+    height = width / aspectRatio;
+    
+    // Ensure height is also within bounds
+    if (height > maxHeight * 2) {
+      height = maxHeight * 2;
       width = height * aspectRatio;
     }
     
-    // Reduce resolution for PDF using canvas
+    // Create canvas for the image at higher quality
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     
     const ctx = canvas.getContext('2d');
+    // Use better image rendering
+    ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0, width, height);
     
-    // Convert to jpeg for better PDF compatibility
+    // For technical diagrams, PNG often offers better quality for line art
     return {
-      dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+      dataUrl: canvas.toDataURL('image/png', 1.0),  // Changed to PNG with full quality
       width,
-      height
+      height,
+      aspectRatio
     };
   } catch (error) {
     console.error('Error optimizing image:', error);
+    return null;
+  }
+};
+
+/**
+ * Special function for processing diagram images
+ * with appropriate quality settings based on content type
+ */
+export const processDiagramForPDF = async (imageUrl) => {
+  try {
+    // Get the base image data first
+    const dataUrl = await loadImageAsDataUrl(imageUrl);
+    if (!dataUrl) return null;
+    
+    // Load image to analyze content type
+    const img = new Image();
+    img.src = dataUrl;
+    
+    // Wait for image to load
+    await new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+    
+    // Calculate aspect ratio
+    const aspectRatio = img.width / img.height;
+    
+    // Prepare canvas at original size to maintain quality
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // For diagrams, PNG format usually works better than JPEG
+    return {
+      dataUrl: canvas.toDataURL('image/png', 1.0),
+      width: img.width,
+      height: img.height,
+      aspectRatio: aspectRatio
+    };
+  } catch (error) {
+    console.error('Error processing diagram:', error);
     return null;
   }
 };

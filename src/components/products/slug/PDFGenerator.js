@@ -161,6 +161,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
 
 // Add product diagrams with natural width adaptation
 // Add product diagrams with grid-based layout and ratio-based column allocation
+// Add product diagrams with improved image quality
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
 
@@ -190,7 +191,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
     const diagram = diagrams[i];
     
     try {
-      // Load diagram image
+      // Load diagram image with improved quality
       const diagramImage = await loadImageAsDataUrl(diagram);
       
       if (diagramImage) {
@@ -248,8 +249,19 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         doc.setFillColor(255, 255, 255);
         doc.rect(currentX, currentY, diagramWidth, standardHeight, 'F');
         
-        // Add the image with proper scaling
-        doc.addImage(diagramImage, 'JPEG', currentX, currentY, diagramWidth, standardHeight);
+        // Add the image with improved quality settings
+        // Using PNG format for higher quality and compression quality of 1 (best)
+        doc.addImage(
+          diagramImage, 
+          'PNG', 
+          currentX, 
+          currentY, 
+          diagramWidth, 
+          standardHeight,
+          `drawing-${i}`, // Unique alias to avoid caching issues
+          'FAST', // Use FAST or MEDIUM instead of SLOW for better performance
+          0 // Rotation
+        );
         
         // Update position for next diagram
         currentX += diagramWidth + diagramGap;
