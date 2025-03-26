@@ -1,7 +1,7 @@
 'use client'
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { loadImageAsDataUrl, loadLogoImage } from './ImageUtils';
+import { loadImageAsDataUrl, loadLogoImage, processDiagramForPDF } from './ImageUtils';
 
 // Function to add certificate images if available
 const addCertificateImages = async (doc, pageWidth, margin, certificatesData) => {
@@ -162,6 +162,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
 // Add product diagrams with natural width adaptation
 // Add product diagrams with grid-based layout and ratio-based column allocation
 // Add product diagrams with improved image quality
+// Add product diagrams with improved image quality and grid-based layout
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
 
@@ -187,26 +188,18 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
   let currentY = yPosition;
   let colsUsedInRow = 0;
 
+  // Process each diagram with higher quality handling
   for (let i = 0; i < diagrams.length; i++) {
     const diagram = diagrams[i];
     
     try {
-      // Load diagram image with improved quality
-      const diagramImage = await loadImageAsDataUrl(diagram);
+      // Use the enhanced processDiagramForPDF function from the ImageUtils
+      // This is an asynchronous function that properly processes the image
+      const processedDiagram = await processDiagramForPDF(diagram);
       
-      if (diagramImage) {
-        // Get image dimensions
-        const img = new Image();
-        img.src = diagramImage;
-        
-        // Wait for image to load
-        await new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-        
-        // Calculate aspect ratio (width:height)
-        const aspectRatio = img.width / img.height;
+      if (processedDiagram && processedDiagram.dataUrl) {
+        // Get aspect ratio from processed data
+        const aspectRatio = processedDiagram.aspectRatio;
         
         // Determine column span based on aspect ratio compared to single column ratio
         // Single column ratio: singleColWidth / standardHeight
@@ -250,24 +243,24 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         doc.rect(currentX, currentY, diagramWidth, standardHeight, 'F');
         
         // Add the image with improved quality settings
-        // Using PNG format for higher quality and compression quality of 1 (best)
+        // Using unique alias and compression options to maintain quality
         doc.addImage(
-          diagramImage, 
-          'PNG', 
-          currentX, 
-          currentY, 
-          diagramWidth, 
-          standardHeight,
-          `drawing-${i}`, // Unique alias to avoid caching issues
-          'FAST', // Use FAST or MEDIUM instead of SLOW for better performance
-          0 // Rotation
+          processedDiagram.dataUrl,   // Use processed high-quality data URL
+          'PNG',                       // Use PNG format for diagrams
+          currentX,                   // X position
+          currentY,                   // Y position
+          diagramWidth,               // Width based on columns
+          standardHeight,             // Standard height
+          `drawing-${i}-${Date.now()}`, // Unique alias with timestamp
+          'FAST',                     // 'FAST' compression for better quality/performance
+          0                           // No rotation
         );
         
         // Update position for next diagram
         currentX += diagramWidth + diagramGap;
         colsUsedInRow += colsToUse;
       } else {
-        // Fallback for failed image load - use single column
+        // Fallback for failed image processing - use single column
         if (colsUsedInRow + 1 > totalCols) {
           // Move to next row
           currentX = margin;
