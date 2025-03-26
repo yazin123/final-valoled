@@ -8,7 +8,7 @@ const ProjectPage = () => {
 
     const params = useParams();
     const projectId = params.slug;
-    console.log("params id", projectId)
+   
     
     return (
         <div className={`min-h-screen w-full mx-auto md:pt-32 py-16 

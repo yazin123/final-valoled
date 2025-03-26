@@ -5,6 +5,19 @@ import { ArrowLeft, Loader2, Play } from 'lucide-react';
 
 import { useProject } from '@/hooks/api-hooks';
 
+const CreditItem = ({ credit }) => {
+    if (!credit) return null;
+    
+    const parts = credit.split(' : ');
+    if (parts.length !== 2) return <p className="text-lg">{credit}</p>;
+    
+    return (
+        <p className="text-lg">
+            <span className="font-semibold">{parts[0]}</span> : {parts[1]}
+        </p>
+    );
+};
+
 const LoadingSkeleton = () => (
     <div className="animate-pulse">
         <div className="h-8 w-32 bg-gray-700 rounded mb-10" />
@@ -165,12 +178,16 @@ const ProjectDetail = ({ projectId }) => {
                             <p className="text-lg">{project.name}</p>
                         </div>
 
-                        {project.architect && (
+                        {project.architect && Array.isArray(project.architect) && project.architect.length > 0 && (
                             <div className="space-y-2">
                                 <h3 className={`text-sm font-medium text-gray-400`}>
                                     CREDITS
                                 </h3>
-                                <p className="text-lg">{project.architect}</p>
+                                <div className="space-y-1">
+                                    {project.architect.map((credit, index) => (
+                                        <CreditItem key={index} credit={credit} />
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
