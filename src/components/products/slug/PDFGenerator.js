@@ -3,6 +3,65 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { loadImageAsDataUrl, loadLogoImage, processDiagramForPDF } from './ImageUtils';
 
+// Configure Roboto font
+
+// Function to convert font to base64
+const fontToBase64 = async (fontPath) => {
+  try {
+    const response = await fetch(fontPath);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error converting font to base64:', error);
+    return null;
+  }
+};
+
+const loadCustomFont = async (fontPath) => {
+  try {
+    const response = await fetch(fontPath);
+    const fontArrayBuffer = await response.arrayBuffer();
+
+    // Convert ArrayBuffer to base64
+    const base64Font = btoa(
+      new Uint8Array(fontArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    return `data:application/font-ttf;base64,${base64Font}`;
+  } catch (error) {
+    console.error(`Error loading font from ${fontPath}:`, error);
+    return null;
+  }
+};
+// Font style setter with error handling
+const setFontStyle = (doc, style) => {
+  try {
+    switch (style) {
+      case 'light':
+        doc.setFont('Roboto', 'light');
+        break;
+      case 'bold':
+        doc.setFont('Roboto', 'bold');
+        break;
+      case 'italic':
+        doc.setFont('Roboto', 'italic');
+        break;
+      default:
+        doc.setFont('Roboto', 'normal');
+    }
+  } catch (error) {
+    // Fallback to system font if Roboto fails
+    console.warn('Failed to set Roboto font, falling back to default', error);
+    doc.setFont('helvetica', 'normal');
+  }
+  return doc;
+};
+
 // Function to add certificate images if available
 const addCertificateImages = async (doc, pageWidth, margin, certificatesData) => {
   if (!certificatesData || !certificatesData.length) return;
@@ -84,7 +143,6 @@ const addCertificateImages = async (doc, pageWidth, margin, certificatesData) =>
 };
 
 // Add product details section
-
 const addProductDetails = async (doc, product, margin, yPosition, contentWidth) => {
   // Calculate column widths
   const leftColumnWidth = contentWidth * 0.5;
@@ -100,8 +158,6 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   doc.setFontSize(12);
   setFontStyle(doc, 'normal').text("PRODUCT DETAILS", leftColumnX, yPosition);
 
-  // Add line under the heading - only as wide as the left column
-
   yPosition += 10;
 
   // Left column - Description
@@ -109,12 +165,11 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   const description = product.description || 'No description available';
 
   // Split description text to fit in the left column width
-  
-  const splitDescription = doc.splitTextToSize(description, leftColumnWidth -10);
-  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition -1);
+  const splitDescription = doc.splitTextToSize(description, leftColumnWidth - 10);
+  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition - 1);
 
   // Right column - Product image
-  const imageWidth = rightColumnWidth ;
+  const imageWidth = rightColumnWidth;
   const imageHeight = 50;
 
   // Add actual product image if available
@@ -126,7 +181,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
         doc.setFillColor(255, 255, 255);
         doc.rect(rightColumnX, yPosition - 4, imageWidth, imageHeight, 'F');
         // Add the image
-        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition -4, imageWidth, imageHeight);
+        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition - 4, imageWidth, imageHeight);
       } else {
         // Fallback if image fails to load
         doc.setDrawColor(0, 0, 0);
@@ -159,9 +214,6 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   return yPosition + Math.max(splitDescription.length * 5 + 5, imageHeight);
 };
 
-// Add product diagrams with natural width adaptation
-// Add product diagrams with grid-based layout and ratio-based column allocation
-// Add product diagrams with improved image quality
 // Add product diagrams with improved image quality and grid-based layout
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
@@ -180,7 +232,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
   const totalCols = 4; // Exactly 4 columns per row
   const diagramGap = 5; // Gap between diagrams
   const standardHeight = 40; // Fixed standard height for all rows
-  
+
   // Calculate standard column width
   const singleColWidth = (contentWidth - ((totalCols - 1) * diagramGap)) / totalCols;
 
@@ -191,20 +243,18 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
   // Process each diagram with higher quality handling
   for (let i = 0; i < diagrams.length; i++) {
     const diagram = diagrams[i];
-    
+
     try {
       // Use the enhanced processDiagramForPDF function from the ImageUtils
-      // This is an asynchronous function that properly processes the image
       const processedDiagram = await processDiagramForPDF(diagram);
-      
+
       if (processedDiagram && processedDiagram.dataUrl) {
         // Get aspect ratio from processed data
         const aspectRatio = processedDiagram.aspectRatio;
-        
-        // Determine column span based on aspect ratio compared to single column ratio
-        // Single column ratio: singleColWidth / standardHeight
+
+        // Determine column span based on aspect ratio
         let colsToUse;
-        
+
         if (aspectRatio >= 4 * (singleColWidth / standardHeight)) {
           colsToUse = 4; // Full row width (4x wider than tall)
         } else if (aspectRatio >= 3 * (singleColWidth / standardHeight)) {
@@ -214,14 +264,14 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
         } else {
           colsToUse = 1; // One column (square or portrait)
         }
-        
+
         // Check if this diagram will fit in the current row
         if (colsUsedInRow + colsToUse > totalCols) {
           // Move to next row
           currentX = margin;
           currentY += standardHeight + diagramGap;
           colsUsedInRow = 0;
-          
+
           // Check if we need a new page
           if (currentY + standardHeight > pageHeight - margin) {
             doc.addPage();
@@ -234,16 +284,15 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
             currentY += 7;
           }
         }
-        
+
         // Calculate the actual width this diagram will use
         const diagramWidth = (colsToUse * singleColWidth) + ((colsToUse - 1) * diagramGap);
-        
+
         // Draw white background
         doc.setFillColor(255, 255, 255);
         doc.rect(currentX, currentY, diagramWidth, standardHeight, 'F');
-        
+
         // Add the image with improved quality settings
-        // Using unique alias and compression options to maintain quality
         doc.addImage(
           processedDiagram.dataUrl,   // Use processed high-quality data URL
           'PNG',                       // Use PNG format for diagrams
@@ -255,18 +304,18 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
           'FAST',                     // 'FAST' compression for better quality/performance
           0                           // No rotation
         );
-        
+
         // Update position for next diagram
         currentX += diagramWidth + diagramGap;
         colsUsedInRow += colsToUse;
       } else {
-        // Fallback for failed image processing - use single column
+        // Fallback for failed image processing
         if (colsUsedInRow + 1 > totalCols) {
           // Move to next row
           currentX = margin;
           currentY += standardHeight + diagramGap;
           colsUsedInRow = 0;
-          
+
           // Check if we need a new page
           if (currentY + standardHeight > pageHeight - margin) {
             doc.addPage();
@@ -279,63 +328,64 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
             currentY += 7;
           }
         }
-        
+
         // Draw placeholder
         doc.setDrawColor(180, 180, 180);
         doc.setFillColor(230, 230, 230);
         doc.rect(currentX, currentY, singleColWidth, standardHeight, 'FD');
         doc.setFontSize(8);
-        doc.text(`Drawing ${i + 1}`, currentX + singleColWidth/2 - 15, currentY + standardHeight/2);
-        
+        doc.text(`Drawing ${i + 1}`, currentX + singleColWidth / 2 - 15, currentY + standardHeight / 2);
+
         // Move to next position
         currentX += singleColWidth + diagramGap;
         colsUsedInRow += 1;
       }
     } catch (e) {
       console.error("Error processing diagram:", e);
-      
+
       // Error fallback - use single column
       if (colsUsedInRow + 1 > totalCols) {
         // Move to next row
         currentX = margin;
         currentY += standardHeight + diagramGap;
         colsUsedInRow = 0;
-        
+
         // Check if we need a new page
         if (currentY + standardHeight > pageHeight - margin) {
           doc.addPage();
           currentY = margin;
           // Re-add section header on new page
           doc.setFontSize(12);
-          setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+          setFontStyle(doc, 'normal').text("", margin, currentY);
           doc.setDrawColor(0, 0, 0);
           doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
           currentY += 7;
         }
       }
-      
+
       // Draw placeholder
       doc.setDrawColor(180, 180, 180);
       doc.setFillColor(230, 230, 230);
       doc.rect(currentX, currentY, singleColWidth, standardHeight, 'FD');
       doc.setFontSize(8);
-      doc.text(`Drawing ${i + 1}`, currentX + singleColWidth/2 - 15, currentY + standardHeight/2);
-      
+      doc.text(`Drawing ${i + 1}`, currentX + singleColWidth / 2 - 15, currentY + standardHeight / 2);
+
       // Move to next position
       currentX += singleColWidth + diagramGap;
       colsUsedInRow += 1;
     }
   }
-  
+
   // Update final position for next section
   yPosition = currentY + standardHeight + 7; // Add spacing after diagrams
-  
+
   return yPosition;
 };
+
 // Add specifications section in two columns
 const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
   doc.setFontSize(12);
-  setFontStyle(doc,'normal').text("SPECIFICATIONS", margin, yPosition);
+  setFontStyle(doc, 'normal').text("SPECIFICATIONS", margin, yPosition);
 
   // Add line right under the heading
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -382,11 +432,11 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       // Key (label) styling
       doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
-      setFontStyle(doc,'normal').text(key, leftColX, leftColY);
+      setFontStyle(doc, 'normal').text(key, leftColX, leftColY);
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc,'nomal').text(splitValue, leftValueX, leftColY);
+      setFontStyle(doc, 'normal').text(splitValue, leftValueX, leftColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -404,11 +454,11 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       // Key (label) styling
       doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
-      setFontStyle(doc,'normal').text(key, rightColX, rightColY);
+      setFontStyle(doc, 'normal').text(key, rightColX, rightColY);
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc,'nomal').text(splitValue, rightValueX, rightColY);
+      setFontStyle(doc, 'normal').text(splitValue, rightValueX, rightColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -456,7 +506,7 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
 
     // Add category header
     doc.setFontSize(12);
-    setFontStyle(doc,'normal').text(category.categoryName.toUpperCase(), margin, yPosition);
+    setFontStyle(doc, 'normal').text(category.categoryName.toUpperCase(), margin, yPosition);
 
     // Add line right under the heading
     doc.setDrawColor(0, 0, 0);
@@ -490,13 +540,13 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
       // Draw single column of features
       for (let i = 0; i < categoryItems.length; i++) {
         const item = categoryItems[i];
-        
+
         doc.setFontSize(8);
-        setFontStyle(doc,'normal').text(item.name, margin, currentY);
+        setFontStyle(doc, 'normal').text(item.name, margin, currentY);
 
         // Split long values to prevent overlapping
         const splitValue = doc.splitTextToSize(String(item.value), contentWidth - labelWidth);
-        setFontStyle(doc,'nomal').text(splitValue, valueX, currentY);
+        setFontStyle(doc, 'normal').text(splitValue, valueX, currentY);
 
         // Adjust the row height based on the number of lines in the value
         if (splitValue.length > 1) {
@@ -510,7 +560,6 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
       yPosition = currentY + 1;
 
       // Add horizontal line after each category
-
       yPosition += 10;
     }
   }
@@ -612,7 +661,6 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
 
       // Title
       doc.setFontSize(8);
-    
       doc.setTextColor(0, 0, 0);
       const valueTitle = value.value || 'Accessory';
       doc.text(valueTitle, textX, col1Y + 8);
@@ -684,7 +732,6 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
 
       // Title
       doc.setFontSize(8);
-   
       doc.setTextColor(0, 0, 0);
       const valueTitle = value.value || 'Accessory';
       doc.text(valueTitle, textX, col2Y + 8);
@@ -712,36 +759,44 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
 
   return yPosition;
 };
-
-const setFontStyle = (doc, style) => {
-  if (style === 'light') {
-    doc.setFont('Roboto', 'light');
-    return doc;
-  } else if (style === 'bold') {
-    doc.setFont('Roboto', 'bold');
-    return doc;
-  }
-  else if (style === 'normal') {
-    doc.setFont('Roboto', 'normal');
-    return doc;
-  } else {
-    // Default to normal
-    doc.setFont('Roboto', 'normal');
-    return doc;
-  }
-};
-
-// Main PDF generation function
 // Main PDF generation function with page refresh
 export const generatePDF = async (product, selectedSpecs, fullProductCode, additionalinfo) => {
   // Create new PDF document (A4 size)
   const doc = new jsPDF();
-  // Add Roboto font to the document
-  doc.addFont('roboto', 'Roboto', 'normal');  // Use one of the built-in fonts
-  doc.addFont('roboto', 'Roboto', 'bold');
-  doc.addFont('roboto', 'Roboto', 'italic');
-  doc.addFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Light.ttf', 'Roboto', 'light');
-  
+
+  // Paths to font files (ensure these paths are correct in your project)
+  const fontPaths = {
+    normal: '/fonts/Roboto-Regular.ttf',
+    bold: '/fonts/Roboto-Bold.ttf',
+    italic: '/fonts/Roboto-Italic.ttf',
+    light: '/fonts/Roboto-Light.ttf'
+  };
+
+
+  // Convert fonts to base64
+  const fonts = {};
+  try {
+    for (const [variant, path] of Object.entries(fontPaths)) {
+      fonts[variant] = await fontToBase64(path);
+    }
+
+    // Add fonts to the document
+    if (fonts.normal) {
+      doc.addFont(fonts.normal, 'Roboto', 'normal');
+    }
+    if (fonts.bold) {
+      doc.addFont(fonts.bold, 'Roboto', 'bold');
+    }
+    if (fonts.italic) {
+      doc.addFont(fonts.italic, 'Roboto', 'italic');
+    }
+    if (fonts.light) {
+      doc.addFont(fonts.light, 'Roboto', 'light');
+    }
+  } catch (error) {
+    console.warn('Error loading custom fonts, falling back to system fonts', error);
+  }
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 10;
@@ -785,8 +840,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
     doc.setFont('Roboto', 'normal');
     doc.setTextColor(100, 100, 100); // Light gray color
 
-    
-    const footerText = additionalinfo?additionalinfo:'test.valoled.com'
+    const footerText = additionalinfo || 'test.valoled.com'
     const textWidth = doc.getStringUnitWidth(footerText) * 8 / doc.internal.scaleFactor;
     doc.text(footerText, pageWidth - margin - textWidth, logoY - 3);
     doc.setTextColor(0, 0, 0); // Reset text color
@@ -811,7 +865,6 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   doc.setFont('Roboto', 'normal');
   doc.text(product.name || 'Product Name', margin, yPosition);
 
-
   yPosition += 8;
   doc.setFontSize(8);
   doc.setFont('Roboto', 'normal');
@@ -819,14 +872,12 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   const codeLabel = "Product Code: ";
   const codeLabelWidth = doc.getStringUnitWidth(codeLabel) * 9 / doc.internal.scaleFactor;
   // Draw the label
-  setFontStyle(doc,'normal').text(codeLabel, margin, yPosition);
+  setFontStyle(doc, 'normal').text(codeLabel, margin, yPosition);
   // Switch to light font for the code itself and position it after the label
   doc.setFont('Roboto', 'light');
-  setFontStyle(doc,'nomal').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
+  setFontStyle(doc, 'normal').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
   // Reset font to normal
   doc.setFont('Roboto', 'normal');
-
-  
 
   // Add certificate images on the right side
   await addCertificateImages(doc, pageWidth, margin, product.certificates);
@@ -846,8 +897,6 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   // Row 2.5: Product Diagrams (if available)
   if (product.product_diagrams) {
     yPosition = await addProductDiagrams(doc, product.product_diagrams, margin, yPosition, pageHeight, contentWidth);
-    
-    // Spacing is now handled within the addProductDiagrams function
   }
 
   // Check if we're approaching the page end - add new page if needed
