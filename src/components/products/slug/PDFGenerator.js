@@ -380,7 +380,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       const [key, value] = leftColSpecs[i];
 
       // Key (label) styling
-      doc.setFont('Helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
       setFontStyle(doc,'normal').text(key, leftColX, leftColY);
 
@@ -402,7 +402,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
       const [key, value] = rightColSpecs[i];
 
       // Key (label) styling
-      doc.setFont('Helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
       setFontStyle(doc,'normal').text(key, rightColX, rightColY);
 
@@ -715,18 +715,18 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
 
 const setFontStyle = (doc, style) => {
   if (style === 'light') {
-    doc.setFont('Helvetica', 'light');
+    doc.setFont('Roboto', 'light');
     return doc;
   } else if (style === 'bold') {
-    doc.setFont('Helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     return doc;
   }
   else if (style === 'normal') {
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     return doc;
   } else {
     // Default to normal
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     return doc;
   }
 };
@@ -736,12 +736,11 @@ const setFontStyle = (doc, style) => {
 export const generatePDF = async (product, selectedSpecs, fullProductCode, additionalinfo) => {
   // Create new PDF document (A4 size)
   const doc = new jsPDF();
-  // Add Helvetica font to the document
-  doc.addFont('helvetica', 'Helvetica', 'normal');  // Use one of the built-in fonts
-  doc.addFont('helvetica', 'Helvetica', 'bold');
-  doc.addFont('helvetica', 'Helvetica', 'italic');
-  doc.addFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Helvetica/Helvetica-Light.ttf', 'Helvetica', 'light');
-
+  // Add Roboto font to the document
+  doc.addFont('roboto', 'Roboto', 'normal');  // Use one of the built-in fonts
+  doc.addFont('roboto', 'Roboto', 'bold');
+  doc.addFont('roboto', 'Roboto', 'italic');
+  doc.addFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Light.ttf', 'Roboto', 'light');
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -783,7 +782,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
 
     // Add footer text on the right side
     doc.setFontSize(8);
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setTextColor(100, 100, 100); // Light gray color
 
     
@@ -805,27 +804,27 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   };
 
   // Set default font
-  doc.setFont('Helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
 
   // Row 1: Product Name and Code
   doc.setFontSize(19);
-  doc.setFont('Helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
   doc.text(product.name || 'Product Name', margin, yPosition);
 
 
   yPosition += 8;
   doc.setFontSize(8);
-  doc.setFont('Helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
   // Calculate the width of the "Product Code: " text
   const codeLabel = "Product Code: ";
   const codeLabelWidth = doc.getStringUnitWidth(codeLabel) * 9 / doc.internal.scaleFactor;
   // Draw the label
   setFontStyle(doc,'normal').text(codeLabel, margin, yPosition);
   // Switch to light font for the code itself and position it after the label
-  doc.setFont('Helvetica', 'light');
+  doc.setFont('Roboto', 'light');
   setFontStyle(doc,'nomal').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
   // Reset font to normal
-  doc.setFont('Helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
 
   
 
