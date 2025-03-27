@@ -158,7 +158,7 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
   doc.setFontSize(12);
   setFontStyle(doc, 'normal').text("PRODUCT DETAILS", leftColumnX, yPosition);
 
-  yPosition += 10;
+  yPosition += 7; // Reduced from 10
 
   // Left column - Description
   doc.setFontSize(8);
@@ -166,7 +166,10 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
 
   // Split description text to fit in the left column width
   const splitDescription = doc.splitTextToSize(description, leftColumnWidth - 10);
-  setFontStyle(doc, 'normal').text(splitDescription, leftColumnX, yPosition - 1);
+  setFontStyle(doc, 'light').text(splitDescription, leftColumnX, yPosition);
+
+  // Calculate description height
+  const descriptionHeight = splitDescription.length * 4; // Reduced line height
 
   // Right column - Product image
   const imageWidth = rightColumnWidth;
@@ -179,17 +182,17 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
       if (productImage) {
         // Draw white background first
         doc.setFillColor(255, 255, 255);
-        doc.rect(rightColumnX, yPosition - 4, imageWidth, imageHeight, 'F');
+        doc.rect(rightColumnX, yPosition - 1, imageWidth, imageHeight, 'F');
         // Add the image
-        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition - 4, imageWidth, imageHeight);
+        doc.addImage(productImage, 'JPEG', rightColumnX, yPosition - 1, imageWidth, imageHeight);
       } else {
         // Fallback if image fails to load
         doc.setDrawColor(0, 0, 0);
         doc.setFillColor(240, 240, 240);
-        doc.rect(rightColumnX, yPosition - 7, imageWidth, imageHeight, 'FD');
+        doc.rect(rightColumnX, yPosition - 1, imageWidth, imageHeight, 'FD');
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        doc.text("Product Image", rightColumnX + imageWidth / 2 - 15, yPosition - 7 + imageHeight / 2);
+        doc.text("Product Image", rightColumnX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
         doc.setTextColor(0, 0, 0);
       }
     } catch (e) {
@@ -197,23 +200,25 @@ const addProductDetails = async (doc, product, margin, yPosition, contentWidth) 
       // Fallback for error
       doc.setDrawColor(0, 0, 0);
       doc.setFillColor(240, 240, 240);
-      doc.rect(rightColumnX, yPosition - 7, imageWidth, imageHeight, 'FD');
+      doc.rect(rightColumnX, yPosition - 1, imageWidth, imageHeight, 'FD');
       doc.setFontSize(8);
-      doc.text("Product Image", rightColumnX + imageWidth / 2 - 15, yPosition - 7 + imageHeight / 2);
+      doc.text("Product Image", rightColumnX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
     }
   } else {
     // No image available
     doc.setDrawColor(0, 0, 0);
     doc.setFillColor(240, 240, 240);
-    doc.rect(rightColumnX, yPosition - 7, imageWidth, imageHeight, 'FD');
+    doc.rect(rightColumnX, yPosition - 1, imageWidth, imageHeight, 'FD');
     doc.setFontSize(8);
-    doc.text("No Image", rightColumnX + imageWidth / 2 - 15, yPosition - 7 + imageHeight / 2);
+    doc.text("No Image", rightColumnX + imageWidth / 2 - 15, yPosition + imageHeight / 2);
   }
 
-  // Return new position below the taller of description or image
-  return yPosition + Math.max(splitDescription.length * 5 + 5, imageHeight);
-};
+  // Calculate the height needed for the section
+  const sectionHeight = Math.max(descriptionHeight + 10, imageHeight + 5);
 
+  // Return new position with minimal extra spacing
+  return yPosition + sectionHeight;
+};
 // Add product diagrams with improved image quality and grid-based layout
 const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, contentWidth) => {
   if (!diagrams || diagrams.length === 0) return yPosition;
@@ -278,7 +283,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
             currentY = margin;
             // Re-add section header on new page
             doc.setFontSize(12);
-            setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+            setFontStyle(doc, 'normal').text("", margin, currentY);
             doc.setDrawColor(0, 0, 0);
             doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
             currentY += 7;
@@ -322,7 +327,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
             currentY = margin;
             // Re-add section header on new page
             doc.setFontSize(12);
-            setFontStyle(doc, 'normal').text("DRAWINGS (continued)", margin, currentY);
+            setFontStyle(doc, 'normal').text("", margin, currentY);
             doc.setDrawColor(0, 0, 0);
             doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
             currentY += 7;
@@ -384,6 +389,7 @@ const addProductDiagrams = async (doc, diagrams, margin, yPosition, pageHeight, 
 
 // Add specifications section in two columns
 const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
+  yPosition+=5
   doc.setFontSize(12);
   setFontStyle(doc, 'normal').text("SPECIFICATIONS", margin, yPosition);
 
@@ -436,7 +442,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc, 'normal').text(splitValue, leftValueX, leftColY);
+      setFontStyle(doc, 'light').text(splitValue, leftValueX, leftColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -458,7 +464,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
 
       // Split long values to prevent overlapping
       const splitValue = doc.splitTextToSize(String(value), contentWidth / 2 - labelWidth - 15);
-      setFontStyle(doc, 'normal').text(splitValue, rightValueX, rightColY);
+      setFontStyle(doc, 'light').text(splitValue, rightValueX, rightColY);
 
       // Adjust the row height based on the number of lines in the value
       if (splitValue.length > 1) {
@@ -470,7 +476,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
     }
 
     // Update Y position to the tallest column
-    yPosition = Math.max(leftColY, rightColY) + 5; // Added extra space for better separation
+    yPosition = Math.max(leftColY, rightColY) ; // Added extra space for better separation
   } else {
     doc.setFontSize(8);
     doc.text("No specifications selected", margin, yPosition);
@@ -482,7 +488,7 @@ const addSpecifications = (doc, specs, margin, yPosition, contentWidth) => {
     doc.setTextColor(100, 100, 100);
     doc.text("Note: For specifications with multiple values, all selected options are displayed separated by commas.", margin, yPosition);
     doc.setTextColor(0, 0, 0);
-    yPosition += 7;
+    yPosition += 3;
   }
 
   return yPosition;
@@ -546,7 +552,7 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
 
         // Split long values to prevent overlapping
         const splitValue = doc.splitTextToSize(String(item.value), contentWidth - labelWidth);
-        setFontStyle(doc, 'normal').text(splitValue, valueX, currentY);
+        setFontStyle(doc, 'light').text(splitValue, valueX, currentY);
 
         // Adjust the row height based on the number of lines in the value
         if (splitValue.length > 1) {
@@ -560,7 +566,7 @@ const addFeatureCategories = (doc, specSheet, margin, yPosition, pageHeight, con
       yPosition = currentY + 1;
 
       // Add horizontal line after each category
-      yPosition += 10;
+      yPosition += 5;
     }
   }
 
@@ -690,7 +696,7 @@ const addAccessories = async (doc, accessories, margin, yPosition, pageHeight, p
 
           // Re-add header on new page
           doc.setFontSize(12);
-          doc.text("ACCESSORIES (continued)", margin, margin);
+          doc.text("", margin, margin);
           doc.setDrawColor(0, 0, 0);
           doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
         }
@@ -875,7 +881,7 @@ export const generatePDF = async (product, selectedSpecs, fullProductCode, addit
   setFontStyle(doc, 'normal').text(codeLabel, margin, yPosition);
   // Switch to light font for the code itself and position it after the label
   doc.setFont('Roboto', 'light');
-  setFontStyle(doc, 'normal').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
+  setFontStyle(doc, 'light').text(`${fullProductCode || product.code || 'N/A'}`, margin + codeLabelWidth, yPosition);
   // Reset font to normal
   doc.setFont('Roboto', 'normal');
 
